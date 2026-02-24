@@ -1,8 +1,8 @@
-import connectDB from "@/lib/mongodb";
+//import connectDB from "@/lib/mongodb";
 import Image from "next/image";
 
 export default function Home() {
-  connectDB();
+  //connectDB();
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
