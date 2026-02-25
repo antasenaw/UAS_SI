@@ -5,20 +5,20 @@ import Image from "next/image"
 
 export default function Topbar() {
   return (
-    <div className="flex items-center justify-between bg-white px-6 py-4 rounded-xl shadow">
+    <div className="flex items-center gap-6 ">
       
       {/* Search */}
-      <div className="flex items-center gap-2 bg-gray-100 px-4 py-2 rounded-lg w-96">
-        <Search size={18} className="text-gray-500" />
+      <div className="flex items-center gap-2 px-4 py-2 rounded-full w-220 border border-black">
+        <Search size={18} className="text-gray-800" />
         <input
           type="text"
           placeholder="Cari..."
-          className="bg-transparent outline-none text-sm w-full"
+          className="bg-transparent outline-none text-black text-sm w-full"
         />
       </div>
 
       {/* Right Side */}
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-6 mr-">
         
         {/* Notifikasi */}
         <div className="relative cursor-pointer">
@@ -38,7 +38,7 @@ export default function Topbar() {
             className="rounded-full"
           />
           <div className="text-sm">
-            <p className="font-semibold text-black">Yogi</p>
+            <p className="font-semibold text-black">Yogi Nugraha</p>
             <p className="text-gray-500 text-xs">Siswa</p>
           </div>
         </div>
