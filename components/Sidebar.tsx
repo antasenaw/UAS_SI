@@ -14,8 +14,8 @@ export default function Sidebar() {
   const menuByRole: any = {
     siswa: [
       { name: "Beranda", href: "/siswa" },
-      { name: "Kelas", href: "/siswa/kelas" },
-      { name: "Tugas", href: "/siswa/tugas" },
+      { name: "Mata Pelajaran", href: "/siswa/mapel" },
+      { name: "Tugas", href: "/siswa/pekerjaan" },
       { name: "Analisa", href: "/siswa/analisa" },
     ],
     guru: [
