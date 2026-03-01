@@ -19,42 +19,42 @@ const allPekerjaan: Pekerjaan[] = [
     nama: 'Soal Latihan Bab 5',
     mapelId: '1',
     mataPelajaran: 'Matematika',
-    deadline: '2024-03-02',
+    deadline: '2026-03-05',
   },
   {
     id: '2',
     nama: 'Essay Kebebasan Pers',
     mapelId: '3',
     mataPelajaran: 'Bahasa Indonesia',
-    deadline: '2024-03-01',
+    deadline: '2026-03-01',
   },
   {
     id: '3',
     nama: 'Laporan Praktik Fisika',
     mapelId: '2',
     mataPelajaran: 'Fisika',
-    deadline: '2024-03-05',
+    deadline: '2026-03-10',
   },
   {
     id: '4',
     nama: 'Ulangan Harian Kimia',
     mapelId: '4',
     mataPelajaran: 'Kimia',
-    deadline: '2024-03-03',
+    deadline: '2026-02-28',
   },
   {
     id: '5',
     nama: 'Presentasi Biologi',
     mapelId: '5',
     mataPelajaran: 'Biologi',
-    deadline: '2024-03-07',
+    deadline: '2026-03-12',
   },
   {
     id: '6',
     nama: 'Essay Analisis Sejarah',
     mapelId: '6',
     mataPelajaran: 'Sejarah',
-    deadline: '2024-02-29',
+    deadline: '2026-02-27',
   },
 ]
 
@@ -112,7 +112,7 @@ export default function PekerjaanPage() {
                   href={`/siswa/mapel/${pekerjaan.mapelId}/pekerjaan/${pekerjaan.id}`}
                   className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all border-l-4 border-blue-500 p-4 flex items-center gap-4"
                 >
-                  <FileText className="text-blue-600 flex-shrink-0" size={24} />
+                  <FileText className="text-blue-600 shrink-0" size={24} />
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-black">{pekerjaan.nama}</h3>
                     <p className="text-xs text-gray-500 mt-1">

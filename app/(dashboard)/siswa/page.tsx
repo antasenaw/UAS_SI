@@ -175,7 +175,7 @@ export default function SiswaDashboard() {
 
   return (
     <div className="flex flex-col h-screen">
-      <Topbar />
+     
 
       <div className="grid grid-cols-4 gap-4 p-2 sm:p-4 flex-1 overflow-hidden">
 
@@ -295,7 +295,7 @@ export default function SiswaDashboard() {
           </div>
 
           {/* Pekerjaan Mendatang */}
-          <div className="bg-white text-black p-3 rounded-lg shadow border">
+          <div className="bg-white text-black p-3 rounded-lg shadow">
             <div className="flex flex-col gap-2">
               {upcomingTugas.map((pekerjaan) => (
                 <Link

@@ -60,7 +60,7 @@ export default function MapelTugasPage() {
                   href="/siswa/mapel/tugas"
                   className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all border-l-4 border-blue-500 p-4 flex items-center gap-4"
                 >
-                  <FileText className="text-blue-600 flex-shrink-0" size={24} />
+                  <FileText className="text-blue-600 shrink-0" size={24} />
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-black">{pekerjaan.nama}</h3>
                     <p className="text-xs text-gray-500 mt-1">
