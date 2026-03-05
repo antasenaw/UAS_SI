@@ -6,7 +6,7 @@ export async function GET() {
   try {
     await connectDB();
     
-    const siswa = await User.find({ role: 'siswa' }).limit(10);
+    const siswa = await User.find({ role: 'Siswa' }).limit(10);
     
     return NextResponse.json({
       success: true,
@@ -28,7 +28,8 @@ export async function POST(request: Request) {
     
     const newSiswa = await User.create({
       ...body,
-      role: 'siswa'
+      role: 'Siswa',
+      status: 'Aktif'
     });
     
     return NextResponse.json(
@@ -37,7 +38,7 @@ export async function POST(request: Request) {
     );
   } catch (error) {
     return NextResponse.json(
-      { success: false, error: 'Failed to create siswa' },
+      { success: false, error: `Failed to create siswa ${error}` },
       { status: 500 }
     );
   }

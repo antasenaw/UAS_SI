@@ -6,15 +6,15 @@ export async function GET() {
   try {
     await connectDB();
     
-    const gurus = await User.find({ role: 'Guru' }).limit(10);
+    const admins = await User.find({ role: 'Admin' }).limit(10);
     
     return NextResponse.json({
       success: true,
-      data: gurus
+      data: admins
     });
   } catch (error) {
     return NextResponse.json(
-      { success: false, error: `Failed to fetch gurus ${error}` },
+      { success: false, error: 'Failed to fetch admins' },
       { status: 500 }
     );
   }
@@ -26,19 +26,18 @@ export async function POST(request: Request) {
     
     const body = await request.json();
     
-    const newGuru = await User.create({
+    const newAdmin = await User.create({
       ...body,
-      role: 'Guru',
-      status: 'Aktif'
+      role: 'Admin'
     });
     
     return NextResponse.json(
-      { success: true, data: newGuru },
+      { success: true, data: newAdmin },
       { status: 201 }
     );
   } catch (error) {
     return NextResponse.json(
-      { success: false, error: `Failed to create guru ${error}` },
+      { success: false, error: 'Failed to create guru' },
       { status: 500 }
     );
   }
