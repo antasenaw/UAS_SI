@@ -19,7 +19,7 @@ export default function LoginPage() {
 
       {/* RIGHT WHITE CURVE */}
       <div className="absolute right-0 top-0 h-full w-[70%] bg-gray-100 rounded-l-[350px] flex items-center justify-center">
-        <div className="w-[380px] p-20 rounded-4xl shadow-lg border-2 border-teal-800">
+        <div className="w-95 p-20 rounded-4xl shadow-lg border-2 border-teal-800">
           <h2 className="text-2xl font-semibold mb-10 text-center text-teal-800">
             Masuk
           </h2>

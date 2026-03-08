@@ -1,6 +1,6 @@
 import connectDB from "@/lib/mongodb";
 import { NextResponse } from "next/server";
-import User from "@/models/User";
+import Submission from "@/models/Submission";
 
 export async function GET(request: Request) {
   try {
@@ -8,25 +8,31 @@ export async function GET(request: Request) {
     
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    const role = searchParams.get('role');
+    const assignmentId = searchParams.get('assignmentId');
+    const studentId = searchParams.get('studentId');
+    const status = searchParams.get('status');
 
     let query = {};
     if (id) {
       query = { _id: id };
-    } else if (role) {
-      query = { role };
+    } else {
+      if (assignmentId) query = { ...query, Assignment: assignmentId };
+      if (studentId) query = { ...query, Student: studentId };
+      if (status) query = { ...query, status };
     }
 
-    const users = await User.find(query).select('-password_hash');
+    const submissions = await Submission.find(query)
+      .populate('Assignment', 'title dueDate')
+      .populate('Student', 'name noInduk email');
     
     return NextResponse.json({
       success: true,
-      count: users.length,
-      data: users
+      count: submissions.length,
+      data: submissions
     });
   } catch {
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch users' },
+      { success: false, error: 'Failed to fetch submissions' },
       { status: 500 }
     );
   }
@@ -38,23 +44,27 @@ export async function POST(request: Request) {
     
     const body = await request.json();
     
-    // Check if user already exists
-    const existingUser = await User.findOne({ email: body.email });
-    if (existingUser) {
+    // Check if student already submitted this assignment
+    const existing = await Submission.findOne({
+      Assignment: body.Assignment,
+      Student: body.Student
+    });
+    
+    if (existing) {
       return NextResponse.json(
-        { success: false, error: 'User dengan email ini sudah terdaftar' },
+        { success: false, error: 'Siswa sudah mengirimkan tugas ini' },
         { status: 409 }
       );
     }
 
-    const newUser = await User.create(body);
+    const newSubmission = await Submission.create(body);
     
     return NextResponse.json(
-      { success: true, data: newUser },
+      { success: true, data: newSubmission },
       { status: 201 }
     );
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Failed to create user';
+    const errorMessage = error instanceof Error ? error.message : 'Failed to create submission';
     return NextResponse.json(
       { success: false, error: errorMessage },
       { status: 400 }
@@ -78,25 +88,25 @@ export async function PUT(request: Request) {
 
     const body = await request.json();
     
-    const updatedUser = await User.findByIdAndUpdate(
+    const updatedSubmission = await Submission.findByIdAndUpdate(
       id,
       body,
       { new: true, runValidators: true }
     );
 
-    if (!updatedUser) {
+    if (!updatedSubmission) {
       return NextResponse.json(
-        { success: false, error: 'User tidak ditemukan' },
+        { success: false, error: 'Pengiriman tugas tidak ditemukan' },
         { status: 404 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      data: updatedUser
+      data: updatedSubmission
     });
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Failed to update user';
+    const errorMessage = error instanceof Error ? error.message : 'Failed to update submission';
     return NextResponse.json(
       { success: false, error: errorMessage },
       { status: 400 }
@@ -118,22 +128,22 @@ export async function DELETE(request: Request) {
       );
     }
 
-    const deletedUser = await User.findByIdAndDelete(id);
+    const deletedSubmission = await Submission.findByIdAndDelete(id);
 
-    if (!deletedUser) {
+    if (!deletedSubmission) {
       return NextResponse.json(
-        { success: false, error: 'User tidak ditemukan' },
+        { success: false, error: 'Pengiriman tugas tidak ditemukan' },
         { status: 404 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      message: 'User berhasil dihapus',
-      data: deletedUser
+      message: 'Pengiriman tugas berhasil dihapus',
+      data: deletedSubmission
     });
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Failed to delete user';
+    const errorMessage = error instanceof Error ? error.message : 'Failed to delete submission';
     return NextResponse.json(
       { success: false, error: errorMessage },
       { status: 500 }

@@ -1,6 +1,6 @@
 import connectDB from "@/lib/mongodb";
 import { NextResponse } from "next/server";
-import User from "@/models/User";
+import Period from "@/models/Period";
 
 export async function GET(request: Request) {
   try {
@@ -8,25 +8,25 @@ export async function GET(request: Request) {
     
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    const role = searchParams.get('role');
+    const active = searchParams.get('active');
 
     let query = {};
     if (id) {
       query = { _id: id };
-    } else if (role) {
-      query = { role };
+    } else if (active) {
+      query = { isActive: active === 'true' };
     }
 
-    const users = await User.find(query).select('-password_hash');
+    const periods = await Period.find(query);
     
     return NextResponse.json({
       success: true,
-      count: users.length,
-      data: users
+      count: periods.length,
+      data: periods
     });
   } catch {
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch users' },
+      { success: false, error: 'Failed to fetch periods' },
       { status: 500 }
     );
   }
@@ -38,23 +38,14 @@ export async function POST(request: Request) {
     
     const body = await request.json();
     
-    // Check if user already exists
-    const existingUser = await User.findOne({ email: body.email });
-    if (existingUser) {
-      return NextResponse.json(
-        { success: false, error: 'User dengan email ini sudah terdaftar' },
-        { status: 409 }
-      );
-    }
-
-    const newUser = await User.create(body);
+    const newPeriod = await Period.create(body);
     
     return NextResponse.json(
-      { success: true, data: newUser },
+      { success: true, data: newPeriod },
       { status: 201 }
     );
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Failed to create user';
+    const errorMessage = error instanceof Error ? error.message : 'Failed to create period';
     return NextResponse.json(
       { success: false, error: errorMessage },
       { status: 400 }
@@ -78,25 +69,25 @@ export async function PUT(request: Request) {
 
     const body = await request.json();
     
-    const updatedUser = await User.findByIdAndUpdate(
+    const updatedPeriod = await Period.findByIdAndUpdate(
       id,
       body,
       { new: true, runValidators: true }
     );
 
-    if (!updatedUser) {
+    if (!updatedPeriod) {
       return NextResponse.json(
-        { success: false, error: 'User tidak ditemukan' },
+        { success: false, error: 'Tahun ajaran tidak ditemukan' },
         { status: 404 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      data: updatedUser
+      data: updatedPeriod
     });
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Failed to update user';
+    const errorMessage = error instanceof Error ? error.message : 'Failed to update period';
     return NextResponse.json(
       { success: false, error: errorMessage },
       { status: 400 }
@@ -118,22 +109,22 @@ export async function DELETE(request: Request) {
       );
     }
 
-    const deletedUser = await User.findByIdAndDelete(id);
+    const deletedPeriod = await Period.findByIdAndDelete(id);
 
-    if (!deletedUser) {
+    if (!deletedPeriod) {
       return NextResponse.json(
-        { success: false, error: 'User tidak ditemukan' },
+        { success: false, error: 'Tahun ajaran tidak ditemukan' },
         { status: 404 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      message: 'User berhasil dihapus',
-      data: deletedUser
+      message: 'Tahun ajaran berhasil dihapus',
+      data: deletedPeriod
     });
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Failed to delete user';
+    const errorMessage = error instanceof Error ? error.message : 'Failed to delete period';
     return NextResponse.json(
       { success: false, error: errorMessage },
       { status: 500 }

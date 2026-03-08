@@ -1,33 +1,31 @@
-import { IUser } from "@/models/User";
+import { ISubmission } from "@/models/Submission";
 
 interface APIResponse {
   success: boolean;
   count: number;
-  data: IUser[];
+  data: ISubmission[];
 }
 
-interface CreateUserPayload {
-  name: string;
-  email: string;
-  password_hash: string;
-  noInduk: string;
-  role: 'Admin' | 'Guru' | 'Siswa';
-  status: 'Aktif' | 'Nonaktif';
+interface CreateSubmissionPayload {
+  Assignment: string;
+  Student: string;
+  attachment?: string[];
+  status?: 'Submitted' | 'Late' | 'Missing' | 'Reviewed';
+  score?: number;
 }
 
-interface UpdateUserPayload {
-  name?: string;
-  email?: string;
-  password_hash?: string;
-  noInduk?: string;
-  role?: 'Admin' | 'Guru' | 'Siswa';
-  status?: 'Aktif' | 'Nonaktif';
+interface UpdateSubmissionPayload {
+  Assignment?: string;
+  Student?: string;
+  attachment?: string[];
+  status?: 'Submitted' | 'Late' | 'Missing' | 'Reviewed';
+  score?: number;
 }
 
 const baseUrl = process.env.NEXT_PUBLIC_SITE_URL;
 
-export async function getUsers(filters?: { role?: string }) {
-  const endpoint = '/api/user';
+export async function getSubmissions(filters?: { assignmentId?: string; studentId?: string; status?: string }) {
+  const endpoint = '/api/submission';
   
   if (!baseUrl) {
     console.error("BASE_URL is not defined in the environment.");
@@ -35,7 +33,9 @@ export async function getUsers(filters?: { role?: string }) {
   }
 
   const url = new URL(`${baseUrl}${endpoint}`);
-  if (filters?.role) url.searchParams.append('role', filters.role);
+  if (filters?.assignmentId) url.searchParams.append('assignmentId', filters.assignmentId);
+  if (filters?.studentId) url.searchParams.append('studentId', filters.studentId);
+  if (filters?.status) url.searchParams.append('status', filters.status);
 
   try {
     const response = await fetch(url.toString(), {
@@ -48,7 +48,7 @@ export async function getUsers(filters?: { role?: string }) {
 
     if (!response.ok) {
       console.error(`API Error: Status ${response.status}`);
-      throw new Error(`Failed to fetch users, status: ${response.status}`);
+      throw new Error(`Failed to fetch submissions, status: ${response.status}`);
     }
 
     const result: APIResponse = await response.json();
@@ -61,13 +61,13 @@ export async function getUsers(filters?: { role?: string }) {
     return result.data;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown fetching error";
-    console.error(`[Data Fetcher] Failed to fetch users: ${errorMessage}`);
+    console.error(`[Data Fetcher] Failed to fetch submissions: ${errorMessage}`);
     return [];
   }
 }
 
-export async function getUserById(id: string) {
-  const endpoint = '/api/user';
+export async function getSubmissionById(id: string) {
+  const endpoint = '/api/submission';
   
   if (!baseUrl) {
     console.error("BASE_URL is not defined in the environment.");
@@ -88,26 +88,26 @@ export async function getUserById(id: string) {
 
     if (!response.ok) {
       console.error(`API Error: Status ${response.status}`);
-      throw new Error(`Failed to fetch user, status: ${response.status}`);
+      throw new Error(`Failed to fetch submission, status: ${response.status}`);
     }
 
     const result: APIResponse = await response.json();
 
     if (!result.success || !result.data || result.data.length === 0) {
-      console.error("User not found");
+      console.error("Submission not found");
       return null;
     }
 
     return result.data[0];
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown fetching error";
-    console.error(`[Data Fetcher] Failed to fetch user: ${errorMessage}`);
+    console.error(`[Data Fetcher] Failed to fetch submission: ${errorMessage}`);
     return null;
   }
 }
 
-export async function createUser(userData: CreateUserPayload) {
-  const endpoint = '/api/user';
+export async function createSubmission(submissionData: CreateSubmissionPayload) {
+  const endpoint = '/api/submission';
   
   if (!baseUrl) {
     console.error("BASE_URL is not defined in the environment.");
@@ -120,12 +120,12 @@ export async function createUser(userData: CreateUserPayload) {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(userData),
+      body: JSON.stringify(submissionData),
     });
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.error || `Failed to create user, status: ${response.status}`);
+      throw new Error(errorData.error || `Failed to create submission, status: ${response.status}`);
     }
 
     const result = await response.json();
@@ -138,13 +138,13 @@ export async function createUser(userData: CreateUserPayload) {
     return result.data;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    console.error(`[Data Fetcher] Failed to create user: ${errorMessage}`);
+    console.error(`[Data Fetcher] Failed to create submission: ${errorMessage}`);
     return null;
   }
 }
 
-export async function updateUser(id: string, userData: UpdateUserPayload) {
-  const endpoint = '/api/user';
+export async function updateSubmission(id: string, submissionData: UpdateSubmissionPayload) {
+  const endpoint = '/api/submission';
   
   if (!baseUrl) {
     console.error("BASE_URL is not defined in the environment.");
@@ -160,12 +160,12 @@ export async function updateUser(id: string, userData: UpdateUserPayload) {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(userData),
+      body: JSON.stringify(submissionData),
     });
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.error || `Failed to update user, status: ${response.status}`);
+      throw new Error(errorData.error || `Failed to update submission, status: ${response.status}`);
     }
 
     const result = await response.json();
@@ -178,13 +178,13 @@ export async function updateUser(id: string, userData: UpdateUserPayload) {
     return result.data;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    console.error(`[Data Fetcher] Failed to update user: ${errorMessage}`);
+    console.error(`[Data Fetcher] Failed to update submission: ${errorMessage}`);
     return null;
   }
 }
 
-export async function deleteUser(id: string) {
-  const endpoint = '/api/user';
+export async function deleteSubmission(id: string) {
+  const endpoint = '/api/submission';
   
   if (!baseUrl) {
     console.error("BASE_URL is not defined in the environment.");
@@ -204,7 +204,7 @@ export async function deleteUser(id: string) {
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.error || `Failed to delete user, status: ${response.status}`);
+      throw new Error(errorData.error || `Failed to delete submission, status: ${response.status}`);
     }
 
     const result = await response.json();
@@ -217,7 +217,7 @@ export async function deleteUser(id: string) {
     return true;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    console.error(`[Data Fetcher] Failed to delete user: ${errorMessage}`);
+    console.error(`[Data Fetcher] Failed to delete submission: ${errorMessage}`);
     return false;
   }
 }

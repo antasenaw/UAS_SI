@@ -1,33 +1,29 @@
-import { IUser } from "@/models/User";
+import { IMaterial } from "@/models/Material";
 
 interface APIResponse {
   success: boolean;
   count: number;
-  data: IUser[];
+  data: IMaterial[];
 }
 
-interface CreateUserPayload {
-  name: string;
-  email: string;
-  password_hash: string;
-  noInduk: string;
-  role: 'Admin' | 'Guru' | 'Siswa';
-  status: 'Aktif' | 'Nonaktif';
+interface CreateMaterialPayload {
+  ClassSubject: string;
+  title: string;
+  description?: string;
+  attachment?: string[];
 }
 
-interface UpdateUserPayload {
-  name?: string;
-  email?: string;
-  password_hash?: string;
-  noInduk?: string;
-  role?: 'Admin' | 'Guru' | 'Siswa';
-  status?: 'Aktif' | 'Nonaktif';
+interface UpdateMaterialPayload {
+  ClassSubject?: string;
+  title?: string;
+  description?: string;
+  attachment?: string[];
 }
 
 const baseUrl = process.env.NEXT_PUBLIC_SITE_URL;
 
-export async function getUsers(filters?: { role?: string }) {
-  const endpoint = '/api/user';
+export async function getMaterials(filters?: { classSubjectId?: string; search?: string }) {
+  const endpoint = '/api/material';
   
   if (!baseUrl) {
     console.error("BASE_URL is not defined in the environment.");
@@ -35,7 +31,8 @@ export async function getUsers(filters?: { role?: string }) {
   }
 
   const url = new URL(`${baseUrl}${endpoint}`);
-  if (filters?.role) url.searchParams.append('role', filters.role);
+  if (filters?.classSubjectId) url.searchParams.append('classSubjectId', filters.classSubjectId);
+  if (filters?.search) url.searchParams.append('search', filters.search);
 
   try {
     const response = await fetch(url.toString(), {
@@ -48,7 +45,7 @@ export async function getUsers(filters?: { role?: string }) {
 
     if (!response.ok) {
       console.error(`API Error: Status ${response.status}`);
-      throw new Error(`Failed to fetch users, status: ${response.status}`);
+      throw new Error(`Failed to fetch materials, status: ${response.status}`);
     }
 
     const result: APIResponse = await response.json();
@@ -61,13 +58,13 @@ export async function getUsers(filters?: { role?: string }) {
     return result.data;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown fetching error";
-    console.error(`[Data Fetcher] Failed to fetch users: ${errorMessage}`);
+    console.error(`[Data Fetcher] Failed to fetch materials: ${errorMessage}`);
     return [];
   }
 }
 
-export async function getUserById(id: string) {
-  const endpoint = '/api/user';
+export async function getMaterialById(id: string) {
+  const endpoint = '/api/material';
   
   if (!baseUrl) {
     console.error("BASE_URL is not defined in the environment.");
@@ -88,26 +85,26 @@ export async function getUserById(id: string) {
 
     if (!response.ok) {
       console.error(`API Error: Status ${response.status}`);
-      throw new Error(`Failed to fetch user, status: ${response.status}`);
+      throw new Error(`Failed to fetch material, status: ${response.status}`);
     }
 
     const result: APIResponse = await response.json();
 
     if (!result.success || !result.data || result.data.length === 0) {
-      console.error("User not found");
+      console.error("Material not found");
       return null;
     }
 
     return result.data[0];
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown fetching error";
-    console.error(`[Data Fetcher] Failed to fetch user: ${errorMessage}`);
+    console.error(`[Data Fetcher] Failed to fetch material: ${errorMessage}`);
     return null;
   }
 }
 
-export async function createUser(userData: CreateUserPayload) {
-  const endpoint = '/api/user';
+export async function createMaterial(materialData: CreateMaterialPayload) {
+  const endpoint = '/api/material';
   
   if (!baseUrl) {
     console.error("BASE_URL is not defined in the environment.");
@@ -120,12 +117,12 @@ export async function createUser(userData: CreateUserPayload) {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(userData),
+      body: JSON.stringify(materialData),
     });
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.error || `Failed to create user, status: ${response.status}`);
+      throw new Error(errorData.error || `Failed to create material, status: ${response.status}`);
     }
 
     const result = await response.json();
@@ -138,13 +135,13 @@ export async function createUser(userData: CreateUserPayload) {
     return result.data;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    console.error(`[Data Fetcher] Failed to create user: ${errorMessage}`);
+    console.error(`[Data Fetcher] Failed to create material: ${errorMessage}`);
     return null;
   }
 }
 
-export async function updateUser(id: string, userData: UpdateUserPayload) {
-  const endpoint = '/api/user';
+export async function updateMaterial(id: string, materialData: UpdateMaterialPayload) {
+  const endpoint = '/api/material';
   
   if (!baseUrl) {
     console.error("BASE_URL is not defined in the environment.");
@@ -160,12 +157,12 @@ export async function updateUser(id: string, userData: UpdateUserPayload) {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(userData),
+      body: JSON.stringify(materialData),
     });
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.error || `Failed to update user, status: ${response.status}`);
+      throw new Error(errorData.error || `Failed to update material, status: ${response.status}`);
     }
 
     const result = await response.json();
@@ -178,13 +175,13 @@ export async function updateUser(id: string, userData: UpdateUserPayload) {
     return result.data;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    console.error(`[Data Fetcher] Failed to update user: ${errorMessage}`);
+    console.error(`[Data Fetcher] Failed to update material: ${errorMessage}`);
     return null;
   }
 }
 
-export async function deleteUser(id: string) {
-  const endpoint = '/api/user';
+export async function deleteMaterial(id: string) {
+  const endpoint = '/api/material';
   
   if (!baseUrl) {
     console.error("BASE_URL is not defined in the environment.");
@@ -204,7 +201,7 @@ export async function deleteUser(id: string) {
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.error || `Failed to delete user, status: ${response.status}`);
+      throw new Error(errorData.error || `Failed to delete material, status: ${response.status}`);
     }
 
     const result = await response.json();
@@ -217,7 +214,7 @@ export async function deleteUser(id: string) {
     return true;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    console.error(`[Data Fetcher] Failed to delete user: ${errorMessage}`);
+    console.error(`[Data Fetcher] Failed to delete material: ${errorMessage}`);
     return false;
   }
 }

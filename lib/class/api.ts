@@ -1,33 +1,29 @@
-import { IUser } from "@/models/User";
+import { IClass } from "@/models/Class";
 
 interface APIResponse {
   success: boolean;
   count: number;
-  data: IUser[];
+  data: IClass[];
 }
 
-interface CreateUserPayload {
-  name: string;
-  email: string;
-  password_hash: string;
-  noInduk: string;
-  role: 'Admin' | 'Guru' | 'Siswa';
-  status: 'Aktif' | 'Nonaktif';
+interface CreateClassPayload {
+  grade: string;
+  major: string;
+  section: string;
+  Wali_kelas: string;
 }
 
-interface UpdateUserPayload {
-  name?: string;
-  email?: string;
-  password_hash?: string;
-  noInduk?: string;
-  role?: 'Admin' | 'Guru' | 'Siswa';
-  status?: 'Aktif' | 'Nonaktif';
+interface UpdateClassPayload {
+  grade?: string;
+  major?: string;
+  section?: string;
+  Wali_kelas?: string;
 }
 
 const baseUrl = process.env.NEXT_PUBLIC_SITE_URL;
 
-export async function getUsers(filters?: { role?: string }) {
-  const endpoint = '/api/user';
+export async function getClasses(filters?: { grade?: string; major?: string }) {
+  const endpoint = '/api/class';
   
   if (!baseUrl) {
     console.error("BASE_URL is not defined in the environment.");
@@ -35,7 +31,8 @@ export async function getUsers(filters?: { role?: string }) {
   }
 
   const url = new URL(`${baseUrl}${endpoint}`);
-  if (filters?.role) url.searchParams.append('role', filters.role);
+  if (filters?.grade) url.searchParams.append('grade', filters.grade);
+  if (filters?.major) url.searchParams.append('major', filters.major);
 
   try {
     const response = await fetch(url.toString(), {
@@ -48,7 +45,7 @@ export async function getUsers(filters?: { role?: string }) {
 
     if (!response.ok) {
       console.error(`API Error: Status ${response.status}`);
-      throw new Error(`Failed to fetch users, status: ${response.status}`);
+      throw new Error(`Failed to fetch classes, status: ${response.status}`);
     }
 
     const result: APIResponse = await response.json();
@@ -61,13 +58,13 @@ export async function getUsers(filters?: { role?: string }) {
     return result.data;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown fetching error";
-    console.error(`[Data Fetcher] Failed to fetch users: ${errorMessage}`);
+    console.error(`[Data Fetcher] Failed to fetch classes: ${errorMessage}`);
     return [];
   }
 }
 
-export async function getUserById(id: string) {
-  const endpoint = '/api/user';
+export async function getClassById(id: string) {
+  const endpoint = '/api/class';
   
   if (!baseUrl) {
     console.error("BASE_URL is not defined in the environment.");
@@ -88,26 +85,26 @@ export async function getUserById(id: string) {
 
     if (!response.ok) {
       console.error(`API Error: Status ${response.status}`);
-      throw new Error(`Failed to fetch user, status: ${response.status}`);
+      throw new Error(`Failed to fetch class, status: ${response.status}`);
     }
 
     const result: APIResponse = await response.json();
 
     if (!result.success || !result.data || result.data.length === 0) {
-      console.error("User not found");
+      console.error("Class not found");
       return null;
     }
 
     return result.data[0];
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown fetching error";
-    console.error(`[Data Fetcher] Failed to fetch user: ${errorMessage}`);
+    console.error(`[Data Fetcher] Failed to fetch class: ${errorMessage}`);
     return null;
   }
 }
 
-export async function createUser(userData: CreateUserPayload) {
-  const endpoint = '/api/user';
+export async function createClass(classData: CreateClassPayload) {
+  const endpoint = '/api/class';
   
   if (!baseUrl) {
     console.error("BASE_URL is not defined in the environment.");
@@ -120,12 +117,12 @@ export async function createUser(userData: CreateUserPayload) {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(userData),
+      body: JSON.stringify(classData),
     });
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.error || `Failed to create user, status: ${response.status}`);
+      throw new Error(errorData.error || `Failed to create class, status: ${response.status}`);
     }
 
     const result = await response.json();
@@ -138,13 +135,13 @@ export async function createUser(userData: CreateUserPayload) {
     return result.data;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    console.error(`[Data Fetcher] Failed to create user: ${errorMessage}`);
+    console.error(`[Data Fetcher] Failed to create class: ${errorMessage}`);
     return null;
   }
 }
 
-export async function updateUser(id: string, userData: UpdateUserPayload) {
-  const endpoint = '/api/user';
+export async function updateClass(id: string, classData: UpdateClassPayload) {
+  const endpoint = '/api/class';
   
   if (!baseUrl) {
     console.error("BASE_URL is not defined in the environment.");
@@ -160,12 +157,12 @@ export async function updateUser(id: string, userData: UpdateUserPayload) {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(userData),
+      body: JSON.stringify(classData),
     });
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.error || `Failed to update user, status: ${response.status}`);
+      throw new Error(errorData.error || `Failed to update class, status: ${response.status}`);
     }
 
     const result = await response.json();
@@ -178,13 +175,13 @@ export async function updateUser(id: string, userData: UpdateUserPayload) {
     return result.data;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    console.error(`[Data Fetcher] Failed to update user: ${errorMessage}`);
+    console.error(`[Data Fetcher] Failed to update class: ${errorMessage}`);
     return null;
   }
 }
 
-export async function deleteUser(id: string) {
-  const endpoint = '/api/user';
+export async function deleteClass(id: string) {
+  const endpoint = '/api/class';
   
   if (!baseUrl) {
     console.error("BASE_URL is not defined in the environment.");
@@ -204,7 +201,7 @@ export async function deleteUser(id: string) {
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.error || `Failed to delete user, status: ${response.status}`);
+      throw new Error(errorData.error || `Failed to delete class, status: ${response.status}`);
     }
 
     const result = await response.json();
@@ -217,7 +214,7 @@ export async function deleteUser(id: string) {
     return true;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    console.error(`[Data Fetcher] Failed to delete user: ${errorMessage}`);
+    console.error(`[Data Fetcher] Failed to delete class: ${errorMessage}`);
     return false;
   }
 }

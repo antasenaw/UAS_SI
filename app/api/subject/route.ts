@@ -1,6 +1,6 @@
 import connectDB from "@/lib/mongodb";
 import { NextResponse } from "next/server";
-import User from "@/models/User";
+import Subject from "@/models/Subject";
 
 export async function GET(request: Request) {
   try {
@@ -8,25 +8,25 @@ export async function GET(request: Request) {
     
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    const role = searchParams.get('role');
+    const name = searchParams.get('name');
 
     let query = {};
     if (id) {
       query = { _id: id };
-    } else if (role) {
-      query = { role };
+    } else if (name) {
+      query = { name: { $regex: name, $options: 'i' } };
     }
 
-    const users = await User.find(query).select('-password_hash');
+    const subjects = await Subject.find(query);
     
     return NextResponse.json({
       success: true,
-      count: users.length,
-      data: users
+      count: subjects.length,
+      data: subjects
     });
   } catch {
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch users' },
+      { success: false, error: 'Failed to fetch subjects' },
       { status: 500 }
     );
   }
@@ -38,23 +38,23 @@ export async function POST(request: Request) {
     
     const body = await request.json();
     
-    // Check if user already exists
-    const existingUser = await User.findOne({ email: body.email });
-    if (existingUser) {
+    // Check if subject already exists
+    const existingSubject = await Subject.findOne({ name: body.name });
+    if (existingSubject) {
       return NextResponse.json(
-        { success: false, error: 'User dengan email ini sudah terdaftar' },
+        { success: false, error: 'Mapel dengan nama ini sudah ada' },
         { status: 409 }
       );
     }
 
-    const newUser = await User.create(body);
+    const newSubject = await Subject.create(body);
     
     return NextResponse.json(
-      { success: true, data: newUser },
+      { success: true, data: newSubject },
       { status: 201 }
     );
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Failed to create user';
+    const errorMessage = error instanceof Error ? error.message : 'Failed to create subject';
     return NextResponse.json(
       { success: false, error: errorMessage },
       { status: 400 }
@@ -78,25 +78,25 @@ export async function PUT(request: Request) {
 
     const body = await request.json();
     
-    const updatedUser = await User.findByIdAndUpdate(
+    const updatedSubject = await Subject.findByIdAndUpdate(
       id,
       body,
       { new: true, runValidators: true }
     );
 
-    if (!updatedUser) {
+    if (!updatedSubject) {
       return NextResponse.json(
-        { success: false, error: 'User tidak ditemukan' },
+        { success: false, error: 'Mapel tidak ditemukan' },
         { status: 404 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      data: updatedUser
+      data: updatedSubject
     });
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Failed to update user';
+    const errorMessage = error instanceof Error ? error.message : 'Failed to update subject';
     return NextResponse.json(
       { success: false, error: errorMessage },
       { status: 400 }
@@ -118,22 +118,22 @@ export async function DELETE(request: Request) {
       );
     }
 
-    const deletedUser = await User.findByIdAndDelete(id);
+    const deletedSubject = await Subject.findByIdAndDelete(id);
 
-    if (!deletedUser) {
+    if (!deletedSubject) {
       return NextResponse.json(
-        { success: false, error: 'User tidak ditemukan' },
+        { success: false, error: 'Mapel tidak ditemukan' },
         { status: 404 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      message: 'User berhasil dihapus',
-      data: deletedUser
+      message: 'Mapel berhasil dihapus',
+      data: deletedSubject
     });
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Failed to delete user';
+    const errorMessage = error instanceof Error ? error.message : 'Failed to delete subject';
     return NextResponse.json(
       { success: false, error: errorMessage },
       { status: 500 }

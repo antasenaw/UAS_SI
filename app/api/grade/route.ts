@@ -1,6 +1,6 @@
 import connectDB from "@/lib/mongodb";
 import { NextResponse } from "next/server";
-import User from "@/models/User";
+import Grade from "@/models/Grade";
 
 export async function GET(request: Request) {
   try {
@@ -8,25 +8,41 @@ export async function GET(request: Request) {
     
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    const role = searchParams.get('role');
+    const studentId = searchParams.get('studentId');
+    const classSubjectId = searchParams.get('classSubjectId');
+    const periodId = searchParams.get('periodId');
+    const status = searchParams.get('status');
 
     let query = {};
     if (id) {
       query = { _id: id };
-    } else if (role) {
-      query = { role };
+    } else {
+      if (studentId) query = { ...query, Student: studentId };
+      if (classSubjectId) query = { ...query, ClassSubject: classSubjectId };
+      if (periodId) query = { ...query, Period: periodId };
+      if (status) query = { ...query, gradeStatus: status };
     }
 
-    const users = await User.find(query).select('-password_hash');
+    const grades = await Grade.find(query)
+      .populate('Student', 'name noInduk email')
+      .populate({
+        path: 'ClassSubject',
+        populate: [
+          { path: 'Class', select: 'grade major section' },
+          { path: 'Subject', select: 'name' },
+          { path: 'Teacher', select: 'name email' }
+        ]
+      })
+      .populate('Period', 'name semester year');
     
     return NextResponse.json({
       success: true,
-      count: users.length,
-      data: users
+      count: grades.length,
+      data: grades
     });
   } catch {
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch users' },
+      { success: false, error: 'Failed to fetch grades' },
       { status: 500 }
     );
   }
@@ -38,23 +54,28 @@ export async function POST(request: Request) {
     
     const body = await request.json();
     
-    // Check if user already exists
-    const existingUser = await User.findOne({ email: body.email });
-    if (existingUser) {
+    // Check if grade record already exists
+    const existing = await Grade.findOne({
+      Student: body.Student,
+      ClassSubject: body.ClassSubject,
+      Period: body.Period
+    });
+    
+    if (existing) {
       return NextResponse.json(
-        { success: false, error: 'User dengan email ini sudah terdaftar' },
+        { success: false, error: 'Nilai untuk siswa ini sudah ada' },
         { status: 409 }
       );
     }
 
-    const newUser = await User.create(body);
+    const newGrade = await Grade.create(body);
     
     return NextResponse.json(
-      { success: true, data: newUser },
+      { success: true, data: newGrade },
       { status: 201 }
     );
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Failed to create user';
+    const errorMessage = error instanceof Error ? error.message : 'Failed to create grade';
     return NextResponse.json(
       { success: false, error: errorMessage },
       { status: 400 }
@@ -78,25 +99,25 @@ export async function PUT(request: Request) {
 
     const body = await request.json();
     
-    const updatedUser = await User.findByIdAndUpdate(
+    const updatedGrade = await Grade.findByIdAndUpdate(
       id,
       body,
       { new: true, runValidators: true }
     );
 
-    if (!updatedUser) {
+    if (!updatedGrade) {
       return NextResponse.json(
-        { success: false, error: 'User tidak ditemukan' },
+        { success: false, error: 'Nilai tidak ditemukan' },
         { status: 404 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      data: updatedUser
+      data: updatedGrade
     });
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Failed to update user';
+    const errorMessage = error instanceof Error ? error.message : 'Failed to update grade';
     return NextResponse.json(
       { success: false, error: errorMessage },
       { status: 400 }
@@ -118,22 +139,22 @@ export async function DELETE(request: Request) {
       );
     }
 
-    const deletedUser = await User.findByIdAndDelete(id);
+    const deletedGrade = await Grade.findByIdAndDelete(id);
 
-    if (!deletedUser) {
+    if (!deletedGrade) {
       return NextResponse.json(
-        { success: false, error: 'User tidak ditemukan' },
+        { success: false, error: 'Nilai tidak ditemukan' },
         { status: 404 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      message: 'User berhasil dihapus',
-      data: deletedUser
+      message: 'Nilai berhasil dihapus',
+      data: deletedGrade
     });
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Failed to delete user';
+    const errorMessage = error instanceof Error ? error.message : 'Failed to delete grade';
     return NextResponse.json(
       { success: false, error: errorMessage },
       { status: 500 }

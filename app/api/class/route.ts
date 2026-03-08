@@ -1,6 +1,6 @@
 import connectDB from "@/lib/mongodb";
 import { NextResponse } from "next/server";
-import User from "@/models/User";
+import Class from "@/models/Class";
 
 export async function GET(request: Request) {
   try {
@@ -8,25 +8,27 @@ export async function GET(request: Request) {
     
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    const role = searchParams.get('role');
+    const grade = searchParams.get('grade');
+    const major = searchParams.get('major');
 
     let query = {};
     if (id) {
       query = { _id: id };
-    } else if (role) {
-      query = { role };
+    } else {
+      if (grade) query = { ...query, grade };
+      if (major) query = { ...query, major };
     }
 
-    const users = await User.find(query).select('-password_hash');
+    const classes = await Class.find(query).populate('Wali_kelas', 'name email');
     
     return NextResponse.json({
       success: true,
-      count: users.length,
-      data: users
+      count: classes.length,
+      data: classes
     });
   } catch {
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch users' },
+      { success: false, error: 'Failed to fetch classes' },
       { status: 500 }
     );
   }
@@ -38,23 +40,14 @@ export async function POST(request: Request) {
     
     const body = await request.json();
     
-    // Check if user already exists
-    const existingUser = await User.findOne({ email: body.email });
-    if (existingUser) {
-      return NextResponse.json(
-        { success: false, error: 'User dengan email ini sudah terdaftar' },
-        { status: 409 }
-      );
-    }
-
-    const newUser = await User.create(body);
+    const newClass = await Class.create(body);
     
     return NextResponse.json(
-      { success: true, data: newUser },
+      { success: true, data: newClass },
       { status: 201 }
     );
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Failed to create user';
+    const errorMessage = error instanceof Error ? error.message : 'Failed to create class';
     return NextResponse.json(
       { success: false, error: errorMessage },
       { status: 400 }
@@ -78,25 +71,25 @@ export async function PUT(request: Request) {
 
     const body = await request.json();
     
-    const updatedUser = await User.findByIdAndUpdate(
+    const updatedClass = await Class.findByIdAndUpdate(
       id,
       body,
       { new: true, runValidators: true }
     );
 
-    if (!updatedUser) {
+    if (!updatedClass) {
       return NextResponse.json(
-        { success: false, error: 'User tidak ditemukan' },
+        { success: false, error: 'Kelas tidak ditemukan' },
         { status: 404 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      data: updatedUser
+      data: updatedClass
     });
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Failed to update user';
+    const errorMessage = error instanceof Error ? error.message : 'Failed to update class';
     return NextResponse.json(
       { success: false, error: errorMessage },
       { status: 400 }
@@ -118,22 +111,22 @@ export async function DELETE(request: Request) {
       );
     }
 
-    const deletedUser = await User.findByIdAndDelete(id);
+    const deletedClass = await Class.findByIdAndDelete(id);
 
-    if (!deletedUser) {
+    if (!deletedClass) {
       return NextResponse.json(
-        { success: false, error: 'User tidak ditemukan' },
+        { success: false, error: 'Kelas tidak ditemukan' },
         { status: 404 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      message: 'User berhasil dihapus',
-      data: deletedUser
+      message: 'Kelas berhasil dihapus',
+      data: deletedClass
     });
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Failed to delete user';
+    const errorMessage = error instanceof Error ? error.message : 'Failed to delete class';
     return NextResponse.json(
       { success: false, error: errorMessage },
       { status: 500 }

@@ -1,6 +1,6 @@
 import connectDB from "@/lib/mongodb";
 import { NextResponse } from "next/server";
-import User from "@/models/User";
+import ClassSubject from "@/models/ClassSubject";
 
 export async function GET(request: Request) {
   try {
@@ -8,25 +8,32 @@ export async function GET(request: Request) {
     
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    const role = searchParams.get('role');
+    const classId = searchParams.get('classId');
+    const subjectId = searchParams.get('subjectId');
+    const teacherId = searchParams.get('teacherId');
 
     let query = {};
     if (id) {
       query = { _id: id };
-    } else if (role) {
-      query = { role };
+    } else {
+      if (classId) query = { ...query, Class: classId };
+      if (subjectId) query = { ...query, Subject: subjectId };
+      if (teacherId) query = { ...query, Teacher: teacherId };
     }
 
-    const users = await User.find(query).select('-password_hash');
+    const classSubjects = await ClassSubject.find(query)
+      .populate('Class', 'grade major section')
+      .populate('Subject', 'name')
+      .populate('Teacher', 'name email');
     
     return NextResponse.json({
       success: true,
-      count: users.length,
-      data: users
+      count: classSubjects.length,
+      data: classSubjects
     });
   } catch {
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch users' },
+      { success: false, error: 'Failed to fetch class subjects' },
       { status: 500 }
     );
   }
@@ -38,23 +45,28 @@ export async function POST(request: Request) {
     
     const body = await request.json();
     
-    // Check if user already exists
-    const existingUser = await User.findOne({ email: body.email });
-    if (existingUser) {
+    // Check if this class-subject-teacher combination already exists
+    const existing = await ClassSubject.findOne({
+      Class: body.Class,
+      Subject: body.Subject,
+      Teacher: body.Teacher
+    });
+    
+    if (existing) {
       return NextResponse.json(
-        { success: false, error: 'User dengan email ini sudah terdaftar' },
+        { success: false, error: 'Kombinasi kelas, mapel, dan guru sudah ada' },
         { status: 409 }
       );
     }
 
-    const newUser = await User.create(body);
+    const newClassSubject = await ClassSubject.create(body);
     
     return NextResponse.json(
-      { success: true, data: newUser },
+      { success: true, data: newClassSubject },
       { status: 201 }
     );
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Failed to create user';
+    const errorMessage = error instanceof Error ? error.message : 'Failed to create class subject';
     return NextResponse.json(
       { success: false, error: errorMessage },
       { status: 400 }
@@ -78,25 +90,25 @@ export async function PUT(request: Request) {
 
     const body = await request.json();
     
-    const updatedUser = await User.findByIdAndUpdate(
+    const updatedClassSubject = await ClassSubject.findByIdAndUpdate(
       id,
       body,
       { new: true, runValidators: true }
     );
 
-    if (!updatedUser) {
+    if (!updatedClassSubject) {
       return NextResponse.json(
-        { success: false, error: 'User tidak ditemukan' },
+        { success: false, error: 'Kelas-Mapel tidak ditemukan' },
         { status: 404 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      data: updatedUser
+      data: updatedClassSubject
     });
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Failed to update user';
+    const errorMessage = error instanceof Error ? error.message : 'Failed to update class subject';
     return NextResponse.json(
       { success: false, error: errorMessage },
       { status: 400 }
@@ -118,22 +130,22 @@ export async function DELETE(request: Request) {
       );
     }
 
-    const deletedUser = await User.findByIdAndDelete(id);
+    const deletedClassSubject = await ClassSubject.findByIdAndDelete(id);
 
-    if (!deletedUser) {
+    if (!deletedClassSubject) {
       return NextResponse.json(
-        { success: false, error: 'User tidak ditemukan' },
+        { success: false, error: 'Kelas-Mapel tidak ditemukan' },
         { status: 404 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      message: 'User berhasil dihapus',
-      data: deletedUser
+      message: 'Kelas-Mapel berhasil dihapus',
+      data: deletedClassSubject
     });
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Failed to delete user';
+    const errorMessage = error instanceof Error ? error.message : 'Failed to delete class subject';
     return NextResponse.json(
       { success: false, error: errorMessage },
       { status: 500 }

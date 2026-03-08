@@ -1,6 +1,6 @@
 import connectDB from "@/lib/mongodb";
 import { NextResponse } from "next/server";
-import User from "@/models/User";
+import Assignment from "@/models/Assignment";
 
 export async function GET(request: Request) {
   try {
@@ -8,25 +8,36 @@ export async function GET(request: Request) {
     
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    const role = searchParams.get('role');
+    const classSubjectId = searchParams.get('classSubjectId');
+    const search = searchParams.get('search');
 
     let query = {};
     if (id) {
       query = { _id: id };
-    } else if (role) {
-      query = { role };
+    } else if (classSubjectId) {
+      query = { ClassSubject: classSubjectId };
+    } else if (search) {
+      query = { title: { $regex: search, $options: 'i' } };
     }
 
-    const users = await User.find(query).select('-password_hash');
+    const assignments = await Assignment.find(query)
+      .populate({
+        path: 'ClassSubject',
+        populate: [
+          { path: 'Class', select: 'grade major section' },
+          { path: 'Subject', select: 'name' },
+          { path: 'Teacher', select: 'name email' }
+        ]
+      });
     
     return NextResponse.json({
       success: true,
-      count: users.length,
-      data: users
+      count: assignments.length,
+      data: assignments
     });
   } catch {
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch users' },
+      { success: false, error: 'Failed to fetch assignments' },
       { status: 500 }
     );
   }
@@ -38,23 +49,14 @@ export async function POST(request: Request) {
     
     const body = await request.json();
     
-    // Check if user already exists
-    const existingUser = await User.findOne({ email: body.email });
-    if (existingUser) {
-      return NextResponse.json(
-        { success: false, error: 'User dengan email ini sudah terdaftar' },
-        { status: 409 }
-      );
-    }
-
-    const newUser = await User.create(body);
+    const newAssignment = await Assignment.create(body);
     
     return NextResponse.json(
-      { success: true, data: newUser },
+      { success: true, data: newAssignment },
       { status: 201 }
     );
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Failed to create user';
+    const errorMessage = error instanceof Error ? error.message : 'Failed to create assignment';
     return NextResponse.json(
       { success: false, error: errorMessage },
       { status: 400 }
@@ -78,25 +80,25 @@ export async function PUT(request: Request) {
 
     const body = await request.json();
     
-    const updatedUser = await User.findByIdAndUpdate(
+    const updatedAssignment = await Assignment.findByIdAndUpdate(
       id,
       body,
       { new: true, runValidators: true }
     );
 
-    if (!updatedUser) {
+    if (!updatedAssignment) {
       return NextResponse.json(
-        { success: false, error: 'User tidak ditemukan' },
+        { success: false, error: 'Tugas tidak ditemukan' },
         { status: 404 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      data: updatedUser
+      data: updatedAssignment
     });
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Failed to update user';
+    const errorMessage = error instanceof Error ? error.message : 'Failed to update assignment';
     return NextResponse.json(
       { success: false, error: errorMessage },
       { status: 400 }
@@ -118,22 +120,22 @@ export async function DELETE(request: Request) {
       );
     }
 
-    const deletedUser = await User.findByIdAndDelete(id);
+    const deletedAssignment = await Assignment.findByIdAndDelete(id);
 
-    if (!deletedUser) {
+    if (!deletedAssignment) {
       return NextResponse.json(
-        { success: false, error: 'User tidak ditemukan' },
+        { success: false, error: 'Tugas tidak ditemukan' },
         { status: 404 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      message: 'User berhasil dihapus',
-      data: deletedUser
+      message: 'Tugas berhasil dihapus',
+      data: deletedAssignment
     });
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Failed to delete user';
+    const errorMessage = error instanceof Error ? error.message : 'Failed to delete assignment';
     return NextResponse.json(
       { success: false, error: errorMessage },
       { status: 500 }

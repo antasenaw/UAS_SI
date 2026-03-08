@@ -1,6 +1,6 @@
 import connectDB from "@/lib/mongodb";
 import { NextResponse } from "next/server";
-import User from "@/models/User";
+import Enrollment from "@/models/Enrollment";
 
 export async function GET(request: Request) {
   try {
@@ -8,25 +8,32 @@ export async function GET(request: Request) {
     
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    const role = searchParams.get('role');
+    const studentId = searchParams.get('studentId');
+    const classId = searchParams.get('classId');
+    const periodId = searchParams.get('periodId');
 
     let query = {};
     if (id) {
       query = { _id: id };
-    } else if (role) {
-      query = { role };
+    } else {
+      if (studentId) query = { ...query, Student: studentId };
+      if (classId) query = { ...query, Class: classId };
+      if (periodId) query = { ...query, Period: periodId };
     }
 
-    const users = await User.find(query).select('-password_hash');
+    const enrollments = await Enrollment.find(query)
+      .populate('Student', 'name noInduk email')
+      .populate('Class', 'grade major section')
+      .populate('Period', 'name semester year');
     
     return NextResponse.json({
       success: true,
-      count: users.length,
-      data: users
+      count: enrollments.length,
+      data: enrollments
     });
   } catch {
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch users' },
+      { success: false, error: 'Failed to fetch enrollments' },
       { status: 500 }
     );
   }
@@ -38,23 +45,28 @@ export async function POST(request: Request) {
     
     const body = await request.json();
     
-    // Check if user already exists
-    const existingUser = await User.findOne({ email: body.email });
-    if (existingUser) {
+    // Check if this student is already enrolled in this class for this period
+    const existing = await Enrollment.findOne({
+      Student: body.Student,
+      Class: body.Class,
+      Period: body.Period
+    });
+    
+    if (existing) {
       return NextResponse.json(
-        { success: false, error: 'User dengan email ini sudah terdaftar' },
+        { success: false, error: 'Siswa sudah terdaftar di kelas ini untuk periode ini' },
         { status: 409 }
       );
     }
 
-    const newUser = await User.create(body);
+    const newEnrollment = await Enrollment.create(body);
     
     return NextResponse.json(
-      { success: true, data: newUser },
+      { success: true, data: newEnrollment },
       { status: 201 }
     );
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Failed to create user';
+    const errorMessage = error instanceof Error ? error.message : 'Failed to create enrollment';
     return NextResponse.json(
       { success: false, error: errorMessage },
       { status: 400 }
@@ -78,25 +90,25 @@ export async function PUT(request: Request) {
 
     const body = await request.json();
     
-    const updatedUser = await User.findByIdAndUpdate(
+    const updatedEnrollment = await Enrollment.findByIdAndUpdate(
       id,
       body,
       { new: true, runValidators: true }
     );
 
-    if (!updatedUser) {
+    if (!updatedEnrollment) {
       return NextResponse.json(
-        { success: false, error: 'User tidak ditemukan' },
+        { success: false, error: 'Pendaftaran tidak ditemukan' },
         { status: 404 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      data: updatedUser
+      data: updatedEnrollment
     });
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Failed to update user';
+    const errorMessage = error instanceof Error ? error.message : 'Failed to update enrollment';
     return NextResponse.json(
       { success: false, error: errorMessage },
       { status: 400 }
@@ -118,22 +130,22 @@ export async function DELETE(request: Request) {
       );
     }
 
-    const deletedUser = await User.findByIdAndDelete(id);
+    const deletedEnrollment = await Enrollment.findByIdAndDelete(id);
 
-    if (!deletedUser) {
+    if (!deletedEnrollment) {
       return NextResponse.json(
-        { success: false, error: 'User tidak ditemukan' },
+        { success: false, error: 'Pendaftaran tidak ditemukan' },
         { status: 404 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      message: 'User berhasil dihapus',
-      data: deletedUser
+      message: 'Pendaftaran berhasil dihapus',
+      data: deletedEnrollment
     });
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Failed to delete user';
+    const errorMessage = error instanceof Error ? error.message : 'Failed to delete enrollment';
     return NextResponse.json(
       { success: false, error: errorMessage },
       { status: 500 }
