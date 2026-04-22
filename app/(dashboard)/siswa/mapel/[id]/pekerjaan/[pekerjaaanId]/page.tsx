@@ -193,7 +193,7 @@ export default function PekerjaanDetailPage() {
 
   return (
     <div className="flex flex-col h-screen">
-      <Topbar />
+    
 
       <div className="flex-1 overflow-auto bg-gray-50">
         {/* Header - Judul dan Deadline */}

@@ -34,7 +34,6 @@ const colorVariants = [
 export default function MapelPage() {
   return (
     <div className="flex flex-col h-screen">
-      <Topbar />
 
       <div className="flex-1 overflow-auto bg-gray-50">
         {/* Header */}

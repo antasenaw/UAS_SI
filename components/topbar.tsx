@@ -57,8 +57,8 @@ export default function Topbar({
     <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-40">
       <div className="px-8 py-4 flex items-center justify-between gap-6">
         {/* Search Bar */}
-        <div className="flex-1 max-w-md">
-          <div className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 bg-gray-50 hover:bg-white transition-colors">
+        <div className="flex-1 max-w">
+          <div className="flex items-center gap-2 px-4  py-3 rounded-full border border-gray-300 bg-gray-50 hover:bg-white transition-colors">
             <Search size={18} className="text-gray-400" />
             <input
               type="text"
