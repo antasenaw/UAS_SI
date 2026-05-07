@@ -1,7 +1,9 @@
 'use client'
 
 import Link from 'next/link'
+import { useMemo } from 'react'
 import { BookOpen, Users, FileText } from 'lucide-react'
+import { useSearch } from '@/app/providers'
 
 interface Kelas {
   id: string

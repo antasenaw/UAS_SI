@@ -1,8 +1,10 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Bell, Search, LogOut, User, Settings, ChevronDown } from 'lucide-react'
 import Image from 'next/image'
+import { useSearch } from '@/app/providers'
 
 interface TopbarProps {
   userName?: string
@@ -17,9 +19,10 @@ export default function Topbar({
   userImage,
   onLogout,
 }: TopbarProps) {
+  const router = useRouter()
+  const { searchQuery, setSearchQuery } = useSearch()
   const [notificationOpen, setNotificationOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
-  const [searchValue, setSearchValue] = useState('')
 
   const roleColors: Record<string, string> = {
     siswa: 'bg-blue-50 text-blue-700',
@@ -63,8 +66,8 @@ export default function Topbar({
             <input
               type="text"
               placeholder="Cari materi, tugas, nilai..."
-              value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="bg-transparent outline-none text-black text-sm w-full placeholder-gray-500"
             />
           </div>
@@ -168,18 +171,24 @@ export default function Topbar({
                   </p>
                 </div>
                 <div className="py-2">
-                  <button className="w-full px-4 py-2 flex items-center gap-3 text-sm text-gray-700 hover:bg-gray-50">
+                  <button
+                    onClick={() => router.push(`/${userRole}/pengaturan`)}
+                    className="w-full px-4 py-2 flex items-center gap-3 text-sm text-gray-700 hover:bg-gray-50"
+                  >
                     <User size={16} />
                     Profil Saya
                   </button>
-                  <button className="w-full px-4 py-2 flex items-center gap-3 text-sm text-gray-700 hover:bg-gray-50">
+                  <button
+                    onClick={() => router.push(`/${userRole}/pengaturan`)}
+                    className="w-full px-4 py-2 flex items-center gap-3 text-sm text-gray-700 hover:bg-gray-50"
+                  >
                     <Settings size={16} />
                     Pengaturan
                   </button>
                 </div>
                 <div className="border-t border-gray-200 p-2">
                   <button
-                    onClick={onLogout}
+                    onClick={onLogout ?? (() => router.push('/login'))}
                     className="w-full px-4 py-2 flex items-center gap-3 text-sm text-red-600 hover:bg-red-50"
                   >
                     <LogOut size={16} />

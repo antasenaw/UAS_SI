@@ -12,7 +12,7 @@ export default function GuruLayout({
   const currentUser = {
     name: 'Budi Santoso',
     role: 'guru' as const,
-    // image: '/avatar-guru.jpg',
+    image: undefined,
   }
 
   return (

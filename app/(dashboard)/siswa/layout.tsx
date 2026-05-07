@@ -12,7 +12,7 @@ export default function SiswaLayout({
   const currentUser = {
     name: 'Muhammad Rizki',
     role: 'siswa' as const,
-    // image: '/avatar-siswa.jpg',
+    image: undefined,
   }
 
   return (

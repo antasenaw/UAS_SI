@@ -15,7 +15,7 @@ export default function ProfileCard({
   noAbsen = '12',
   tahunMasuk = '2023/2024',
   waliKelas = 'Budi Santoso',
-  fotoUrl = null
+  fotoUrl = undefined
 }: ProfileCardProps) {
   return (
     <div className="bg-white px-4 pt-3 pb-3 rounded-lg shadow">

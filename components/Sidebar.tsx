@@ -156,10 +156,7 @@ export default function Sidebar({ role }: SidebarProps) {
   const colors = roleColors[role] || roleColors.siswa
 
   const isActive = (href: string) => {
-    if (href === `/${role}`) {
-      return pathname === `/(dashboard)${href}`
-    }
-    return pathname.includes(href)
+    return pathname === href || pathname.startsWith(`${href}/`)
   }
 
   const handleLogout = () => {

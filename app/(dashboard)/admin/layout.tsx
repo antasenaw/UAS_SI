@@ -12,7 +12,7 @@ export default function AdminLayout({
   const currentUser = {
     name: 'Admin Sekolah',
     role: 'admin' as const,
-    // image: '/avatar-admin.jpg',
+    image: undefined,
   }
 
   return (

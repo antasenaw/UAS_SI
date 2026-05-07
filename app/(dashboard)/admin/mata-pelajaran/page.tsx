@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Plus, Edit2, Trash2, BookOpen } from 'lucide-react'
+import { useSearch } from '@/app/providers'
 
 interface MataPelajaran {
   id: string
@@ -82,10 +83,22 @@ const mataPelajaranList: MataPelajaran[] = [
 export default function AdminMataPelajaranPage() {
   const [filterKategori, setFilterKategori] = useState<'all' | 'umum' | 'peminatan'>('all')
 
-  const filteredMapel = mataPelajaranList.filter((mapel) => {
-    if (filterKategori === 'all') return true
-    return mapel.kategori === filterKategori
-  })
+  const { searchQuery } = useSearch()
+
+  const filteredMapel = useMemo(
+    () =>
+      mataPelajaranList.filter((mapel) => {
+        const matchesKategori = filterKategori === 'all' || mapel.kategori === filterKategori
+        const query = searchQuery.trim().toLowerCase()
+        const matchesSearch =
+          query === '' ||
+          mapel.nama.toLowerCase().includes(query) ||
+          mapel.kode.toLowerCase().includes(query) ||
+          mapel.kategori.toLowerCase().includes(query)
+        return matchesKategori && matchesSearch
+      }),
+    [filterKategori, searchQuery]
+  )
 
   return (
     <div className="p-8">
@@ -123,7 +136,7 @@ export default function AdminMataPelajaranPage() {
         </label>
         <select
           value={filterKategori}
-          onChange={(e) => setFilterKategori(e.target.value as any)}
+          onChange={(e) => setFilterKategori(e.target.value as 'all' | 'umum' | 'peminatan')}
           className="w-full md:w-64 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="all">Semua Kategori</option>
