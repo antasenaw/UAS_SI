@@ -155,8 +155,21 @@ export default function Sidebar({ role }: SidebarProps) {
   const menu = menuConfig[role] || []
   const colors = roleColors[role] || roleColors.siswa
 
+  const normalizePath = (path: string) => path.replace(/\/+$|^$/, '')
+  const cleanPathname = normalizePath(pathname)
+
   const isActive = (href: string) => {
-    return pathname === href || pathname.startsWith(`${href}/`)
+    const normalizedHref = normalizePath(href)
+
+    if (normalizedHref === cleanPathname) {
+      return true
+    }
+
+    if (['/siswa', '/guru', '/admin'].includes(normalizedHref)) {
+      return cleanPathname === normalizedHref
+    }
+
+    return cleanPathname.startsWith(`${normalizedHref}/`)
   }
 
   const handleLogout = () => {

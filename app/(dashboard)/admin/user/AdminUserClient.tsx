@@ -1,20 +1,25 @@
 'use client'
 
 import React, { useState } from 'react'
+import { useSearch } from '@/app/providers'
 import { IUser } from '@/models/User'
-import { Plus, Search, Edit2, Trash2, Eye } from 'lucide-react'
+import { Plus, Edit2, Trash2, Eye } from 'lucide-react'
 
 const AdminUserClient = ({usersList}: {usersList: IUser[]}) => {
-  const [searchTerm, setSearchTerm] = useState('')
   const [filterRole, setFilterRole] = useState<'all' | 'Siswa' | 'Guru' | 'Admin'>('all')
+  const { searchQuery } = useSearch()
+  const normalizedSearch = searchQuery.toLowerCase().trim()
+  const searchActive = normalizedSearch.length > 0
 
   const filteredUsers = usersList.filter((user) => {
     const matchSearch =
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase())
+      user.name.toLowerCase().includes(normalizedSearch) ||
+      user.email.toLowerCase().includes(normalizedSearch)
     const matchRole = filterRole === 'all' || user.role === filterRole
     return matchSearch && matchRole
   })
+
+  const usersToShow = searchActive ? filteredUsers : usersList.filter(u => filterRole === 'all' || u.role === filterRole)
 
   const getRoleBadge = (role: string) => {
     switch (role) {
@@ -40,7 +45,9 @@ const AdminUserClient = ({usersList}: {usersList: IUser[]}) => {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-black mb-2">Manajemen User</h1>
-          <p className="text-gray-600">Kelola data pengguna sistem (Siswa, Guru, Admin)</p>
+          <p className="text-gray-600">
+            {searchActive ? `Hasil pencarian untuk "${searchQuery}"` : 'Kelola data pengguna sistem (Siswa, Guru, Admin)'}
+          </p>
         </div>
         <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
           <Plus size={20} />
@@ -51,21 +58,6 @@ const AdminUserClient = ({usersList}: {usersList: IUser[]}) => {
       {/* Filters */}
       <div className="bg-white rounded-lg shadow-md p-6 mb-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-black mb-2">
-              Cari User
-            </label>
-            <div className="relative">
-              <Search size={18} className="absolute left-3 top-3 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Cari nama atau email..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
           <div>
             <label className="block text-sm font-medium text-black mb-2">
               Filter Peran
@@ -80,6 +72,9 @@ const AdminUserClient = ({usersList}: {usersList: IUser[]}) => {
               <option value="Guru">Guru</option>
               <option value="Admin">Admin</option>
             </select>
+          </div>
+          <div className="flex items-end">
+            <p className="text-sm text-gray-600">Gunakan search di topbar untuk mencari user</p>
           </div>
         </div>
       </div>
@@ -111,7 +106,8 @@ const AdminUserClient = ({usersList}: {usersList: IUser[]}) => {
               </tr>
             </thead>
             <tbody>
-              {filteredUsers.map((user) => (
+              {usersToShow.length > 0 ? (
+                usersToShow.map((user) => (
                 <tr key={String(user._id)} className="border-b border-gray-100 hover:bg-gray-50">
                   <td className="px-6 py-4 font-medium text-black">{user.name}</td>
                   <td className="px-6 py-4 text-gray-600 text-sm">{user.email}</td>
@@ -148,7 +144,18 @@ const AdminUserClient = ({usersList}: {usersList: IUser[]}) => {
                     </div>
                   </td>
                 </tr>
-              ))}
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={6} className="px-6 py-16 text-center">
+                    <div className="flex flex-col items-center justify-center">
+                      <p className="text-gray-600 text-lg">
+                        {searchActive ? 'Tidak ada user yang sesuai dengan pencarian' : 'Belum ada user'}
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

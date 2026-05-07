@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useSearch } from '@/app/providers'
 import { Plus, Edit2, Trash2, Calendar, Info } from 'lucide-react'
 
 interface PeriodeAkademik {
@@ -100,13 +101,25 @@ const formatDate = (dateStr: string) => {
 
 export default function AdminPeriodePage() {
   const [selectedPeriode, setSelectedPeriode] = useState<string | null>(null)
+  const { searchQuery } = useSearch()
+  const normalizedSearch = searchQuery.toLowerCase().trim()
+  const searchActive = normalizedSearch.length > 0
+
+  const filteredPeriode = periodeList.filter((periode) =>
+    [periode.tahunAwal.toString(), periode.tahunAkhir.toString(), periode.semester, periode.status]
+      .some((value) => value.toLowerCase().includes(normalizedSearch))
+  )
+
+  const periodeToShow = searchActive ? filteredPeriode : periodeList
 
   return (
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-black mb-2">Manajemen Periode Akademik</h1>
-          <p className="text-gray-600">Kelola tahun ajaran dan semester</p>
+          <p className="text-gray-600">
+            {searchActive ? `Hasil pencarian untuk "${searchQuery}"` : 'Kelola tahun ajaran dan semester'}
+          </p>
         </div>
         <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
           <Plus size={20} />
@@ -142,8 +155,9 @@ export default function AdminPeriodePage() {
 
       {/* List */}
       <div className="space-y-6">
-        {periodeList.map((periode) => (
-          <div key={periode.id} className="bg-white rounded-lg shadow-md overflow-hidden">
+        {periodeToShow.length > 0 ? (
+          periodeToShow.map((periode) => (
+            <div key={periode.id} className="bg-white rounded-lg shadow-md overflow-hidden">
             <div
               className="p-6 cursor-pointer hover:bg-gray-50 transition-colors"
               onClick={() => setSelectedPeriode(selectedPeriode === periode.id ? null : periode.id)}
@@ -221,9 +235,12 @@ export default function AdminPeriodePage() {
                   </div>
                 )}
               </div>
-            )}
-          </div>
-        ))}
+            </div>
+          ))) : (
+            <div className="bg-white rounded-lg shadow-md p-10 text-center text-gray-600">
+          Tidak ada periode yang sesuai dengan pencarian.
+        </div>
+      )}
       </div>
     </div>
   )

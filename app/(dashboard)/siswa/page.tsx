@@ -2,7 +2,8 @@
 
 import Link from "next/link"
 import ProfileCard from "@/components/profileCard"
-import Topbar from "@/components/topbar"
+import { useSearch } from '@/app/providers'
+import { currentSiswaProfile } from '@/lib/user/mockProfile'
 import { ArrowRight } from "lucide-react"
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
@@ -20,16 +21,6 @@ interface Tugas {
   mataKuliahId: string
   mataKuliah: string
   status: 'belum' | 'proses' | 'selesai'
-}
-
-interface SiswaProfile {
-  nama: string
-  nis: string
-  kelas: string
-  noAbsen: string
-  tahunMasuk: string
-  waliKelas: string
-  fotoUrl?: string
 }
 
 interface ScoreData {
@@ -117,15 +108,7 @@ const allTugas: Tugas[] = [
   },
 ]
 
-// Data dummy profil siswa
-const dummySiswaProfile: SiswaProfile = {
-  nama: 'Yogi Nugraha',
-  nis: '247006111067',
-  kelas: 'XII MIPA 4',
-  noAbsen: '12',
-  tahunMasuk: '2023/2024',
-  waliKelas: 'Budi Santoso',
-}
+const siswaProfile = currentSiswaProfile
 
 // Helper: Get random items from array
 function getRandomItems<T>(items: T[], limit: number): T[] {
@@ -169,9 +152,27 @@ function calculateAverageScore(data: ScoreData[]): number {
 }
 
 export default function SiswaDashboard() {
+  const { searchQuery } = useSearch()
+  const normalizedSearch = searchQuery.trim().toLowerCase()
+  const searchActive = normalizedSearch.length > 0
+
   const randomMataPelajaran = getRandomItems(allMataPelajaran, 3)
   const upcomingTugas = getUpcomingTugas(allTugas)
   const averageScore = calculateAverageScore(dummyScoreData)
+
+  const filteredMataPelajaran = allMataPelajaran.filter((mp) => {
+    return [mp.nama, mp.guru, mp.jam].some((value) =>
+      value.toLowerCase().includes(normalizedSearch)
+    )
+  })
+
+  const filteredTugas = allTugas.filter((tugas) => {
+    return [tugas.namaPekerjaan, tugas.mataKuliah, tugas.status]
+      .some((value) => value.toLowerCase().includes(normalizedSearch))
+  })
+
+  const mataPelajaranToShow = searchActive ? filteredMataPelajaran : randomMataPelajaran
+  const tugasToShow = searchActive ? filteredTugas : upcomingTugas
 
   return (
     <div className="flex flex-col h-screen">
@@ -183,16 +184,21 @@ export default function SiswaDashboard() {
         <div className="col-span-4 lg:col-span-3 space-y-2 overflow-y-auto pr-2">
 
           {/* Welcome Section */}
-          <div className="bg-white text-black p-4 rounded-lg shadow border">
+          <div className="bg-white text-black p-4 rounded-lg shadow-md border border-gray-200">
             <h1 className="text-xl sm:text-2xl font-semibold mb-1">
-              Selamat Datang, {dummySiswaProfile.nama}
+              Selamat Datang, {siswaProfile.name}
             </h1>
             <p className="text-gray-600 text-xs sm:text-sm">Jangan lupa mengerjakan pekerjaan tepat waktu!</p>
           </div>
 
           {/* Mata Pelajaran Section Header */}
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold text-black">Mata Pelajaran</h2>
+            <div>
+              <h2 className="text-base font-semibold text-black">Mata Pelajaran</h2>
+              {searchActive && (
+                <p className="text-xs text-gray-500 mt-1">Menampilkan hasil pencarian untuk "{searchQuery}"</p>
+              )}
+            </div>
             <Link
               href="/siswa/mapel"
               className="flex items-center gap-1 text-blue-600 hover:text-blue-800 transition-colors text-xs font-medium"
@@ -202,19 +208,24 @@ export default function SiswaDashboard() {
             </Link>
           </div>
 
-          {/* Mata Pelajaran Grid - Random 3 */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-black">
-            {randomMataPelajaran.map((mp) => (
-              <Link
-                key={mp.id}
-                href={`/siswa/mapel/${mp.id}`}
-                className="bg-white px-4 py-9 gap-2 rounded-lg shadow border border-gray-200 hover:shadow-md hover:border-blue-300 transition-all"
-              >
-                <h3 className="text-sm font-semibold mb-1">{mp.nama}</h3>
-                <p className="text-xs text-gray-600 mb-1">Guru: {mp.guru}</p>
-                <p className="text-xs text-gray-500">Jam: {mp.jam}</p>
-              </Link>
-            ))}
+            {mataPelajaranToShow.length > 0 ? (
+              mataPelajaranToShow.map((mp) => (
+                <Link
+                  key={mp.id}
+                  href={`/siswa/mapel/${mp.id}`}
+                  className="bg-white px-4 py-9 gap-2 rounded-lg shadow border border-gray-200 hover:shadow-md hover:border-blue-300 transition-all"
+                >
+                  <h3 className="text-sm font-semibold mb-1">{mp.nama}</h3>
+                  <p className="text-xs text-gray-600 mb-1">Guru: {mp.guru}</p>
+                  <p className="text-xs text-gray-500">Jam: {mp.jam}</p>
+                </Link>
+              ))
+            ) : (
+              <div className="col-span-full bg-white rounded-lg shadow border border-gray-200 p-6 text-center text-sm text-gray-600">
+                Tidak ada mata pelajaran yang cocok dengan kata kunci pencarian.
+              </div>
+            )}
           </div>
 
           {/* Analisa Section Header */}
@@ -274,16 +285,16 @@ export default function SiswaDashboard() {
         <div className="col-span-4 lg:col-span-1 space-y-3 lg:self-start overflow-y-auto pr-2">
           {/* Profile Card */}
           <ProfileCard
-            nama={dummySiswaProfile.nama}
-            nis={dummySiswaProfile.nis}
-            kelas={dummySiswaProfile.kelas}
-            noAbsen={dummySiswaProfile.noAbsen}
-            tahunMasuk={dummySiswaProfile.tahunMasuk}
-            waliKelas={dummySiswaProfile.waliKelas}
+            nama={siswaProfile.name}
+            nis={siswaProfile.nis}
+            kelas={siswaProfile.kelas}
+            noAbsen={siswaProfile.noAbsen}
+            tahunMasuk={siswaProfile.tahunMasuk}
+            waliKelas={siswaProfile.waliKelas}
           />
 
           {/* Pekerjaan Mendatang Header */}
-          <div className="flex items-center justify-between px-3">
+          <div className="flex items-center justify-between px-4 pt-2">
             <h3 className="font-semibold text-sm text-black">Pekerjaan Mendatang</h3>
             <Link
               href="/siswa/pekerjaan"
@@ -297,19 +308,25 @@ export default function SiswaDashboard() {
           {/* Pekerjaan Mendatang */}
           <div className="bg-white text-black p-3 rounded-lg shadow">
             <div className="flex flex-col gap-2">
-              {upcomingTugas.map((pekerjaan) => (
-                <Link
-                  key={pekerjaan.id}
-                  href="/siswa/mapel/tugas"
-                  className="bg-gray-50 p-3 rounded border border-gray-200 hover:shadow-sm hover:border-blue-300 transition-all"
-                >
-                  <h4 className="text-xs font-semibold text-gray-900 mb-1 line-clamp-2">{pekerjaan.namaPekerjaan}</h4>
-                  <p className="text-xs text-gray-600 mb-1 line-clamp-1">{pekerjaan.mataKuliah}</p>
-                  <div className="text-xs font-medium text-red-600">
-                    {formatDeadline(pekerjaan.deadline)}
-                  </div>
-                </Link>
-              ))}
+              {tugasToShow.length > 0 ? (
+                tugasToShow.map((pekerjaan) => (
+                  <Link
+                    key={pekerjaan.id}
+                    href="/siswa/mapel/tugas"
+                    className="bg-gray-50 p-3 rounded border border-gray-200 hover:shadow-sm hover:border-blue-300 transition-all"
+                  >
+                    <h4 className="text-xs font-semibold text-gray-900 mb-1 line-clamp-2">{pekerjaan.namaPekerjaan}</h4>
+                    <p className="text-xs text-gray-600 mb-1 line-clamp-1">{pekerjaan.mataKuliah}</p>
+                    <div className="text-xs font-medium text-red-600">
+                      {formatDeadline(pekerjaan.deadline)}
+                    </div>
+                  </Link>
+                ))
+              ) : (
+                <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600 text-center">
+                  Tidak ada tugas yang cocok dengan kata kunci pencarian.
+                </div>
+              )}
             </div>
           </div>
         </div>

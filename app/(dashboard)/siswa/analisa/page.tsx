@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import Topbar from '@/components/topbar'
+import { useSearch } from '@/app/providers'
 import { ArrowLeft } from 'lucide-react'
 import {
   LineChart,

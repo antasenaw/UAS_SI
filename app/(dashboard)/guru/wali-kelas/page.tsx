@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useSearch } from '@/app/providers'
 import { Users } from 'lucide-react'
 
 interface Kelas {
@@ -63,17 +64,30 @@ const siswaList = [
 ]
 
 export default function GuruWaliKelasPage() {
+  const { searchQuery } = useSearch()
+  const normalizedSearch = searchQuery.toLowerCase().trim()
+  const searchActive = normalizedSearch.length > 0
+
+  const filteredSiswa = siswaList.filter((siswa) =>
+    [siswa.nama, siswa.nis, siswa.noUrut].some((value) =>
+      value.toLowerCase().includes(normalizedSearch)
+    )
+  )
+
+  const siswaToShow = searchActive ? filteredSiswa : siswaList
+
   return (
     <div className="p-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-black mb-2">Kelas Wali Saya</h1>
-        <p className="text-gray-600">Data siswa dalam kelas yang Anda dampingi</p>
+        <p className="text-gray-600">
+          {searchActive ? `Hasil pencarian untuk "${searchQuery}"` : 'Data siswa dalam kelas yang Anda dampingi'}
+        </p>
       </div>
 
       {/* Kelas Card */}
       <div className="mb-8 grid grid-cols-1 gap-6">
-        {kelasWali.map((kelas) => (
-          <div key={kelas.id} className="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500">
+        {kelasWali.map((kelas) => (          <div key={kelas.id} className="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-2xl font-bold text-black">{kelas.nama}</h2>
@@ -118,7 +132,8 @@ export default function GuruWaliKelasPage() {
               </tr>
             </thead>
             <tbody>
-              {siswaList.map((siswa, idx) => (
+              {siswaToShow.length > 0 ? (
+                siswaToShow.map((siswa, idx) => (
                 <tr key={siswa.id} className="border-b border-gray-100 hover:bg-gray-50">
                   <td className="px-6 py-4 text-sm font-medium text-gray-700">{idx + 1}</td>
                   <td className="px-6 py-4 font-medium text-black">{siswa.nama}</td>
@@ -142,7 +157,19 @@ export default function GuruWaliKelasPage() {
                     </Link>
                   </td>
                 </tr>
-              ))}
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={7} className="px-6 py-16 text-center">
+                    <div className="flex flex-col items-center justify-center">
+                      <Users size={48} className="text-gray-400 mb-4" />
+                      <p className="text-gray-600 text-lg">
+                        {searchActive ? 'Tidak ada siswa yang sesuai dengan pencarian' : 'Belum ada siswa'}
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

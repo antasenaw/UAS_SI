@@ -1,7 +1,7 @@
 'use client'
 
 import Link from "next/link"
-import Topbar from "@/components/topbar"
+import { useSearch } from "@/app/providers"
 import { Book } from "lucide-react"
 
 interface MataPelajaran {
@@ -32,6 +32,18 @@ const colorVariants = [
 ]
 
 export default function MapelPage() {
+  const { searchQuery } = useSearch()
+  const normalizedSearch = searchQuery.trim().toLowerCase()
+  const searchActive = normalizedSearch.length > 0
+
+  const filteredMataPelajaran = allMataPelajaran.filter((mp) => {
+    return [mp.nama, mp.guru, mp.hari, mp.jam].some((value) =>
+      value.toLowerCase().includes(normalizedSearch)
+    )
+  })
+
+  const mataPelajaranToShow = searchActive ? filteredMataPelajaran : allMataPelajaran
+
   return (
     <div className="flex flex-col h-screen">
 
@@ -40,7 +52,9 @@ export default function MapelPage() {
         <div className="bg-white border-b sticky top-0 z-10">
           <div className="max-w-6xl mx-auto px-4 py-6">
             <h1 className="text-3xl font-semibold text-black">Mata Pelajaran</h1>
-            <p className="text-gray-600 text-sm mt-1">Semua kelas dan mata pelajaran Anda</p>
+            <p className="text-gray-600 text-sm mt-1">
+              {searchActive ? `Hasil pencarian untuk "${searchQuery}"` : 'Semua kelas dan mata pelajaran Anda'}
+            </p>
           </div>
         </div>
 
@@ -48,7 +62,8 @@ export default function MapelPage() {
         <div className="max-w-6xl mx-auto px-4 py-8">
           {/* Mata Pelajaran Grid - Classroom Style */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {allMataPelajaran.map((mapel, index) => (
+            {mataPelajaranToShow.length > 0 ? (
+              mataPelajaranToShow.map((mapel, index) => (
               <Link
                 key={mapel.id}
                 href={`/siswa/mapel/${mapel.id}`}
@@ -73,11 +88,19 @@ export default function MapelPage() {
                   </div>
                 </div>
               </Link>
-            ))}
+              ))
+            ) : (
+              <div className="col-span-full text-center py-16">
+                <Book size={48} className="mx-auto text-gray-400 mb-4" />
+                <p className="text-gray-600 text-lg">
+                  {searchActive ? 'Tidak ada mata pelajaran yang sesuai dengan pencarian' : 'Belum ada mata pelajaran'}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Empty State */}
-          {allMataPelajaran.length === 0 && (
+          {mataPelajaranToShow.length === 0 && (
             <div className="text-center py-16">
               <Book size={48} className="mx-auto text-gray-400 mb-4" />
               <p className="text-gray-600 text-lg">Belum ada mata pelajaran</p>

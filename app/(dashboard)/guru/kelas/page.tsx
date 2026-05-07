@@ -55,15 +55,30 @@ const kelasList: Kelas[] = [
 ]
 
 export default function GuruKelasPage() {
+  const { searchQuery } = useSearch()
+  const normalizedSearch = searchQuery.toLowerCase().trim()
+  const searchActive = normalizedSearch.length > 0
+
+  const filteredKelas = kelasList.filter((kelas) =>
+    [kelas.nama, kelas.mataPelajaran, kelas.tingkat].some((value) =>
+      value.toLowerCase().includes(normalizedSearch)
+    )
+  )
+
+  const kelasToShow = searchActive ? filteredKelas : kelasList
+
   return (
     <div className="p-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-black mb-2">Kelas yang Saya Ajar</h1>
-        <p className="text-gray-600">Kelola materi dan pekerjaan untuk setiap kelas</p>
+        <p className="text-gray-600">
+          {searchActive ? `Hasil pencarian untuk "${searchQuery}"` : 'Kelola materi dan pekerjaan untuk setiap kelas'}
+        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {kelasList.map((kelas) => (
+        {kelasToShow.length > 0 ? (
+          kelasToShow.map((kelas) => (
           <Link
             key={kelas.id}
             href={`/guru/kelas/${kelas.id}`}
@@ -97,7 +112,15 @@ export default function GuruKelasPage() {
               </button>
             </div>
           </Link>
-        ))}
+          ))
+        ) : (
+          <div className="col-span-full text-center py-16">
+            <BookOpen size={48} className="mx-auto text-gray-400 mb-4" />
+            <p className="text-gray-600 text-lg">
+              {searchActive ? 'Tidak ada kelas yang sesuai dengan pencarian' : 'Belum ada kelas'}
+            </p>
+          </div>
+        )}
       </div>
     </div>
   )

@@ -1,5 +1,7 @@
 'use client'
 
+import { useMemo } from 'react'
+import { useSearch } from '@/app/providers'
 import { Users, BookOpen, Layers, Calendar, TrendingUp, Activity } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts'
 
@@ -22,11 +24,33 @@ const dataPerkembanganNilai = [
 ]
 
 export default function AdminDashboard() {
+  const { searchQuery } = useSearch()
+  const normalizedSearch = searchQuery.toLowerCase().trim()
+  const searchActive = normalizedSearch.length > 0
+
+  const filteredGrafikSiswa = useMemo(
+    () =>
+      dataGrafikSiswa.filter((item) =>
+        item.kelas.toLowerCase().includes(normalizedSearch)
+      ),
+    [normalizedSearch]
+  )
+
+  const filteredPerkembanganNilai = useMemo(
+    () =>
+      dataPerkembanganNilai.filter((item) =>
+        item.bulan.toLowerCase().includes(normalizedSearch)
+      ),
+    [normalizedSearch]
+  )
+
   return (
     <div className="p-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-black mb-2">Dashboard Admin</h1>
-        <p className="text-gray-600">Ringkasan statistik sistem informasi akademik</p>
+        <p className="text-gray-600">
+          {searchActive ? `Hasil pencarian untuk "${searchQuery}"` : 'Ringkasan statistik sistem informasi akademik'}
+        </p>
       </div>
 
       {/* Main Stats */}
@@ -98,7 +122,7 @@ export default function AdminDashboard() {
         <div className="bg-white rounded-lg shadow-md p-6">
           <h2 className="text-lg font-semibold text-black mb-4">Distribusi Siswa per Kelas</h2>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={dataGrafikSiswa}>
+            <BarChart data={filteredGrafikSiswa}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="kelas" />
               <YAxis />
@@ -112,7 +136,7 @@ export default function AdminDashboard() {
         <div className="bg-white rounded-lg shadow-md p-6">
           <h2 className="text-lg font-semibold text-black mb-4">Perkembangan Rata-rata Nilai</h2>
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={dataPerkembanganNilai}>
+            <LineChart data={filteredPerkembanganNilai}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="bulan" />
               <YAxis domain={[0, 100]} />

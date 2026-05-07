@@ -84,6 +84,8 @@ export default function AdminMataPelajaranPage() {
   const [filterKategori, setFilterKategori] = useState<'all' | 'umum' | 'peminatan'>('all')
 
   const { searchQuery } = useSearch()
+  const normalizedSearch = searchQuery.trim().toLowerCase()
+  const searchActive = normalizedSearch.length > 0
 
   const filteredMapel = useMemo(
     () =>
@@ -105,7 +107,9 @@ export default function AdminMataPelajaranPage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-black mb-2">Manajemen Mata Pelajaran</h1>
-          <p className="text-gray-600">Kelola data mata pelajaran dan pengajaran</p>
+          <p className="text-gray-600">
+            {searchActive ? `Hasil pencarian untuk "${searchQuery}"` : 'Kelola data mata pelajaran dan pengajaran'}
+          </p>
         </div>
         <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
           <Plus size={20} />
@@ -172,50 +176,58 @@ export default function AdminMataPelajaranPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredMapel.map((mapel) => (
-                <tr key={mapel.id} className="border-b border-gray-100 hover:bg-gray-50">
-                  <td className="px-6 py-4 font-medium text-black">{mapel.nama}</td>
-                  <td className="px-6 py-4 text-gray-600 font-semibold">{mapel.kode}</td>
-                  <td className="px-6 py-4">
-                    <span
-                      className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
-                        mapel.kategori === 'umum'
-                          ? 'bg-blue-50 text-blue-700'
-                          : 'bg-green-50 text-green-700'
-                      }`}
-                    >
-                      {mapel.kategori === 'umum' ? 'Umum' : 'Peminatan'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <div className="flex flex-wrap gap-1 justify-center">
-                      {mapel.tingkatan.map((tingkat, idx) => (
-                        <span
-                          key={idx}
-                          className="inline-block px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium"
-                        >
-                          Kelas {tingkat}
-                        </span>
-                      ))}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <span className="inline-block px-3 py-1 bg-blue-50 text-blue-700 rounded font-semibold">
-                      {mapel.jumlahGuru}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <div className="flex items-center justify-center gap-2">
-                      <button className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors">
-                        <Edit2 size={18} />
-                      </button>
-                      <button className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
+              {filteredMapel.length > 0 ? (
+                filteredMapel.map((mapel) => (
+                  <tr key={mapel.id} className="border-b border-gray-100 hover:bg-gray-50">
+                    <td className="px-6 py-4 font-medium text-black">{mapel.nama}</td>
+                    <td className="px-6 py-4 text-gray-600 font-semibold">{mapel.kode}</td>
+                    <td className="px-6 py-4">
+                      <span
+                        className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
+                          mapel.kategori === 'umum'
+                            ? 'bg-blue-50 text-blue-700'
+                            : 'bg-green-50 text-green-700'
+                        }`}
+                      >
+                        {mapel.kategori === 'umum' ? 'Umum' : 'Peminatan'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <div className="flex flex-wrap gap-1 justify-center">
+                        {mapel.tingkatan.map((tingkat, idx) => (
+                          <span
+                            key={idx}
+                            className="inline-block px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium"
+                          >
+                            Kelas {tingkat}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <span className="inline-block px-3 py-1 bg-blue-50 text-blue-700 rounded font-semibold">
+                        {mapel.jumlahGuru}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <button className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors">
+                          <Edit2 size={18} />
+                        </button>
+                        <button className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={6} className="py-16 text-center text-gray-600">
+                    Tidak ada mata pelajaran yang sesuai dengan pencarian.
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>

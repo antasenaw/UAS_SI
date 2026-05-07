@@ -2,18 +2,14 @@
 
 import Sidebar from '@/components/Sidebar'
 import Topbar from '@/components/topbar'
+import { currentAdminProfile } from '@/lib/user/mockProfile'
 
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  // TODO: Ambil data user dari context/session
-  const currentUser = {
-    name: 'Admin Sekolah',
-    role: 'admin' as const,
-    image: undefined,
-  }
+  const currentUser = currentAdminProfile
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -21,7 +17,7 @@ export default function AdminLayout({
       <div className="flex-1 flex flex-col overflow-hidden">
         <Topbar
           userName={currentUser.name}
-          userRole={currentUser.role}
+          userRole="admin"
           userImage={currentUser.image}
         />
         <div className="flex-1 overflow-auto">

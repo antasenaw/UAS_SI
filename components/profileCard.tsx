@@ -18,7 +18,7 @@ export default function ProfileCard({
   fotoUrl = undefined
 }: ProfileCardProps) {
   return (
-    <div className="bg-white px-4 pt-3 pb-3 rounded-lg shadow">
+    <div className="bg-white px-4 pt-3 pb-3 rounded-lg shadow-md border border-gray-200">
       <div className="flex flex-col items-center">
         {fotoUrl ? (
           <img

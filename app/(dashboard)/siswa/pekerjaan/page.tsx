@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import Topbar from '@/components/topbar'
+import { useSearch } from '@/app/providers'
 import { FileText, ArrowLeft } from 'lucide-react'
 
 interface Pekerjaan {
@@ -59,9 +59,21 @@ const allPekerjaan: Pekerjaan[] = [
 ]
 
 export default function PekerjaanPage() {
+  const { searchQuery } = useSearch()
   const [sortBy, setSortBy] = useState<'deadline' | 'terbaru'>('deadline')
 
-  const sortedPekerjaan = [...allPekerjaan].sort((a, b) => {
+  const normalizedSearch = searchQuery.trim().toLowerCase()
+  const searchActive = normalizedSearch.length > 0
+
+  const filteredPekerjaan = allPekerjaan.filter((p) => {
+    return [p.nama, p.mataPelajaran, p.deadline].some((value) =>
+      value.toLowerCase().includes(normalizedSearch)
+    )
+  })
+
+  const pekerjaanToShow = searchActive ? filteredPekerjaan : allPekerjaan
+
+  const sortedPekerjaan = [...pekerjaanToShow].sort((a, b) => {
     if (sortBy === 'deadline') {
       return new Date(a.deadline).getTime() - new Date(b.deadline).getTime()
     } else if (sortBy === 'terbaru') {
@@ -86,7 +98,9 @@ export default function PekerjaanPage() {
               Kembali
             </Link>
             <h1 className="text-3xl font-semibold text-black">Semua Pekerjaan</h1>
-            <p className="text-gray-600 text-sm mt-1">Daftar lengkap pekerjaan dari semua mata pelajaran</p>
+            <p className="text-gray-600 text-sm mt-1">
+              {searchActive ? `Hasil pencarian untuk "${searchQuery}"` : 'Daftar lengkap pekerjaan dari semua mata pelajaran'}
+            </p>
           </div>
         </div>
 
@@ -125,7 +139,9 @@ export default function PekerjaanPage() {
           ) : (
             <div className="text-center py-16">
               <FileText size={48} className="mx-auto text-gray-400 mb-4" />
-              <p className="text-gray-500 text-lg">Tidak ada pekerjaan</p>
+              <p className="text-gray-500 text-lg">
+                {searchActive ? 'Tidak ada pekerjaan yang sesuai dengan pencarian' : 'Tidak ada pekerjaan'}
+              </p>
             </div>
           )}
         </div>

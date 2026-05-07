@@ -1,5 +1,6 @@
 'use client'
 
+import { useSearch } from '@/app/providers'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 
 interface AnalysisData {
@@ -36,11 +37,23 @@ const distribusiNilai: DistribusiNilai[] = [
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444']
 
 export default function GuruAnalisaPage() {
+  const { searchQuery } = useSearch()
+  const normalizedSearch = searchQuery.toLowerCase().trim()
+  const searchActive = normalizedSearch.length > 0
+
+  const filteredAnalisis = dataAnalisis.filter((item) =>
+    item.nama.toLowerCase().includes(normalizedSearch)
+  )
+
+  const analisaToShow = searchActive ? filteredAnalisis : dataAnalisis
+
   return (
     <div className="p-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-black mb-2">Analisa Kelas XII MIPA 4</h1>
-        <p className="text-gray-600">Laporan analisis kemajuan siswa dalam kelas yang Anda dampingi</p>
+        <p className="text-gray-600">
+          {searchActive ? `Hasil pencarian untuk "${searchQuery}"` : 'Laporan analisis kemajuan siswa dalam kelas yang Anda dampingi'}
+        </p>
       </div>
 
       {/* Summary Stats */}
@@ -68,15 +81,21 @@ export default function GuruAnalisaPage() {
         {/* Bar Chart - Nilai Siswa */}
         <div className="bg-white rounded-lg shadow-md p-6">
           <h2 className="text-lg font-semibold text-black mb-4">Grafik Nilai Siswa</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={dataAnalisis}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="nama" angle={-45} textAnchor="end" height={80} />
-              <YAxis domain={[0, 100]} />
-              <Tooltip />
-              <Bar dataKey="nilai" fill="#3b82f6" radius={[8, 8, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          {analisaToShow.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={analisaToShow}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="nama" angle={-45} textAnchor="end" height={80} />
+                <YAxis domain={[0, 100]} />
+                <Tooltip />
+                <Bar dataKey="nilai" fill="#3b82f6" radius={[8, 8, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-[300px] flex items-center justify-center text-gray-600">
+              Tidak ada data yang sesuai dengan pencarian
+            </div>
+          )}
         </div>
 
         {/* Pie Chart - Distribusi Nilai */}
@@ -131,56 +150,64 @@ export default function GuruAnalisaPage() {
               </tr>
             </thead>
             <tbody>
-              {dataAnalisis.map((item, idx) => {
-                let grade = ''
-                let gradeColor = ''
-                let status = ''
-                let statusColor = ''
+              {analisaToShow.length > 0 ? (
+                analisaToShow.map((item, idx) => {
+                  let grade = ''
+                  let gradeColor = ''
+                  let status = ''
+                  let statusColor = ''
 
-                if (item.nilai >= 85) {
-                  grade = 'A'
-                  gradeColor = 'bg-green-50 text-green-700'
-                  status = 'Excellent'
-                  statusColor = 'bg-green-100 text-green-800'
-                } else if (item.nilai >= 75) {
-                  grade = 'B'
-                  gradeColor = 'bg-blue-50 text-blue-700'
-                  status = 'Good'
-                  statusColor = 'bg-blue-100 text-blue-800'
-                } else if (item.nilai >= 65) {
-                  grade = 'C'
-                  gradeColor = 'bg-yellow-50 text-yellow-700'
-                  status = 'Fair'
-                  statusColor = 'bg-yellow-100 text-yellow-800'
-                } else {
-                  grade = 'D'
-                  gradeColor = 'bg-red-50 text-red-700'
-                  status = 'Poor'
-                  statusColor = 'bg-red-100 text-red-800'
-                }
+                  if (item.nilai >= 85) {
+                    grade = 'A'
+                    gradeColor = 'bg-green-50 text-green-700'
+                    status = 'Excellent'
+                    statusColor = 'bg-green-100 text-green-800'
+                  } else if (item.nilai >= 75) {
+                    grade = 'B'
+                    gradeColor = 'bg-blue-50 text-blue-700'
+                    status = 'Good'
+                    statusColor = 'bg-blue-100 text-blue-800'
+                  } else if (item.nilai >= 65) {
+                    grade = 'C'
+                    gradeColor = 'bg-yellow-50 text-yellow-700'
+                    status = 'Fair'
+                    statusColor = 'bg-yellow-100 text-yellow-800'
+                  } else {
+                    grade = 'D'
+                    gradeColor = 'bg-red-50 text-red-700'
+                    status = 'Poor'
+                    statusColor = 'bg-red-100 text-red-800'
+                  }
 
-                return (
-                  <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="px-6 py-4 text-sm font-medium text-gray-700">{idx + 1}</td>
-                    <td className="px-6 py-4 font-medium text-black">{item.nama}</td>
-                    <td className="px-6 py-4 text-center">
-                      <span className="inline-block px-3 py-1 bg-blue-50 text-blue-700 rounded font-semibold">
-                        {item.nilai}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className={`inline-block px-3 py-1 rounded font-semibold ${gradeColor}`}>
-                        {grade}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${statusColor}`}>
-                        {status}
-                      </span>
-                    </td>
-                  </tr>
-                )
-              })}
+                  return (
+                    <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50">
+                      <td className="px-6 py-4 text-sm font-medium text-gray-700">{idx + 1}</td>
+                      <td className="px-6 py-4 font-medium text-black">{item.nama}</td>
+                      <td className="px-6 py-4 text-center">
+                        <span className="inline-block px-3 py-1 bg-blue-50 text-blue-700 rounded font-semibold">
+                          {item.nilai}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <span className={`inline-block px-3 py-1 rounded font-semibold ${gradeColor}`}>
+                          {grade}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${statusColor}`}>
+                          {status}
+                        </span>
+                      </td>
+                    </tr>
+                  )
+                })
+              ) : (
+                <tr>
+                  <td colSpan={5} className="py-16 text-center text-gray-600">
+                    Tidak ada data siswa sesuai pencarian.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

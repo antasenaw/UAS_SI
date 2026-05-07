@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useSearch } from '@/app/providers'
 import { Plus, Edit2, Trash2, Users } from 'lucide-react'
 
 interface Kelas {
@@ -28,13 +29,26 @@ const kelasList: Kelas[] = [
 
 export default function AdminKelasPage() {
   const [showModal, setShowModal] = useState(false)
+  const { searchQuery } = useSearch()
+  const normalizedSearch = searchQuery.toLowerCase().trim()
+  const searchActive = normalizedSearch.length > 0
+
+  const filteredKelas = kelasList.filter((kelas) =>
+    [kelas.nama, kelas.tingkat, kelas.waliBakal].some((value) =>
+      value?.toLowerCase().includes(normalizedSearch)
+    )
+  )
+
+  const kelasToShow = searchActive ? filteredKelas : kelasList
 
   return (
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-black mb-2">Manajemen Kelas</h1>
-          <p className="text-gray-600">Kelola data kelas dan distribusi siswa</p>
+          <p className="text-gray-600">
+            {searchActive ? `Hasil pencarian untuk "${searchQuery}"` : 'Kelola data kelas dan distribusi siswa'}
+          </p>
         </div>
         <button
           onClick={() => setShowModal(true)}
@@ -67,7 +81,8 @@ export default function AdminKelasPage() {
 
       {/* Grid View */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {kelasList.map((kelas) => (
+        {kelasToShow.length > 0 ? (
+          kelasToShow.map((kelas) => (
           <div key={kelas.id} className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
             <div className="flex items-start justify-between mb-4">
               <div>
@@ -94,7 +109,15 @@ export default function AdminKelasPage() {
               </p>
             </div>
           </div>
-        ))}
+          ))
+        ) : (
+          <div className="col-span-full text-center py-16">
+            <Users size={48} className="mx-auto text-gray-400 mb-4" />
+            <p className="text-gray-600 text-lg">
+              {searchActive ? 'Tidak ada kelas yang sesuai dengan pencarian' : 'Belum ada kelas'}
+            </p>
+          </div>
+        )}
       </div>
     </div>
   )

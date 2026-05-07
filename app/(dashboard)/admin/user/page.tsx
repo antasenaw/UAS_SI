@@ -21,7 +21,6 @@ import AdminUserClient from './AdminUserClient';
 
 export default async function AdminUserPage() {
   const users = await getUsers();
-  console.log(users, 'memek');
 
   return (
     <>

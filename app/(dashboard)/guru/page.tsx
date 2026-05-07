@@ -1,6 +1,8 @@
 'use client'
 
 import GuruProfileCard from '@/components/guruProfileCard'
+import { useMemo } from 'react'
+import { useSearch } from '@/app/providers'
 import { BookOpen, Users, TrendingUp, AlertCircle } from 'lucide-react'
 
 interface KelasSummary {
@@ -84,6 +86,28 @@ const siswaAnalisa: SiswaAnalisa[] = [
 ]
 
 export default function GuruBeranda() {
+  const { searchQuery } = useSearch()
+  const normalizedSearch = searchQuery.toLowerCase().trim()
+  const searchActive = normalizedSearch.length > 0
+
+  const kelasToShow = useMemo(
+    () =>
+      kelasList.filter((kelas) =>
+        [kelas.nama, kelas.topikTerbaru]
+          .some((value) => value.toLowerCase().includes(normalizedSearch))
+      ),
+    [normalizedSearch]
+  )
+
+  const siswaToShow = useMemo(
+    () =>
+      siswaAnalisa.filter((siswa) =>
+        [siswa.nama, siswa.kelas, siswa.status]
+          .some((value) => value.toString().toLowerCase().includes(normalizedSearch))
+      ),
+    [normalizedSearch]
+  )
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'baik':
@@ -101,7 +125,9 @@ export default function GuruBeranda() {
     <div className="p-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-black mb-2">Selamat Datang, Ibu Siti</h1>
-        <p className="text-gray-600">Kelola kelas dan pantau perkembangan siswa Anda</p>
+        <p className="text-gray-600">
+          {searchActive ? `Hasil pencarian untuk "${searchQuery}"` : 'Kelola kelas dan pantau perkembangan siswa Anda'}
+        </p>
       </div>
 
       <div className="grid grid-cols-4 gap-6 mb-8">
@@ -152,20 +178,26 @@ export default function GuruBeranda() {
           <div className="bg-white rounded-lg shadow-md p-6">
             <h2 className="text-xl font-semibold text-black mb-4">Kelas yang Anda Ajar</h2>
             <div className="grid grid-cols-2 gap-4">
-              {kelasList.map((kelas) => (
-                <div
-                  key={kelas.id}
-                  className="p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow cursor-pointer"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-semibold text-black">{kelas.nama}</h3>
-                    <span className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">
-                      {kelas.jumlahSiswa} siswa
-                    </span>
+              {kelasToShow.length > 0 ? (
+                kelasToShow.map((kelas) => (
+                  <div
+                    key={kelas.id}
+                    className="p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-semibold text-black">{kelas.nama}</h3>
+                      <span className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">
+                        {kelas.jumlahSiswa} siswa
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600">{kelas.topikTerbaru}</p>
                   </div>
-                  <p className="text-sm text-gray-600">{kelas.topikTerbaru}</p>
+                ))
+              ) : (
+                <div className="col-span-full text-center py-16 text-gray-600">
+                  Tidak ada kelas sesuai pencarian.
                 </div>
-              ))}
+              )}
             </div>
           </div>
 
@@ -184,7 +216,8 @@ export default function GuruBeranda() {
                   </tr>
                 </thead>
                 <tbody>
-                  {siswaAnalisa.map((siswa) => (
+                  {siswaToShow.length > 0 ? (
+                  siswaToShow.map((siswa) => (
                     <tr key={siswa.id} className="border-b border-gray-100 hover:bg-gray-50">
                       <td className="py-3 font-medium text-black">{siswa.nama}</td>
                       <td className="py-3 text-center">
@@ -202,7 +235,13 @@ export default function GuruBeranda() {
                         </span>
                       </td>
                     </tr>
-                  ))}
+                  ))) : (
+                    <tr>
+                      <td colSpan={3} className="py-16 text-center text-gray-600">
+                        Tidak ada data siswa sesuai pencarian.
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>

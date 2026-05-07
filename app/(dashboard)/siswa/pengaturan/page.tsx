@@ -2,15 +2,21 @@
 
 import { useState } from 'react'
 import { Save } from 'lucide-react'
+import { currentSiswaProfile } from '@/lib/user/mockProfile'
 
 export default function SiswaPengaturanPage() {
   const [formData, setFormData] = useState({
-    nama: 'Muhammad Rizki',
-    nis: '247006111067',
-    kelas: 'XII MIPA 4',
-    email: 'rizki.siswa@email.com',
-    telepon: '081234567890',
-    alamat: 'Jl. Merdeka No. 10, Jakarta',
+    nama: currentSiswaProfile.name,
+    nis: currentSiswaProfile.nis,
+    kelas: currentSiswaProfile.kelas,
+    email: currentSiswaProfile.email,
+    telepon: currentSiswaProfile.telepon,
+    alamat: currentSiswaProfile.alamat,
+  })
+  const [notificationSettings, setNotificationSettings] = useState({
+    email: true,
+    sms: false,
+    app: true,
   })
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success'>('idle')
 
@@ -26,8 +32,8 @@ export default function SiswaPengaturanPage() {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-black mb-2">Pengaturan Akun</h1>
-        <p className="text-gray-600">Perbarui informasi profil dan preferensi akun Anda</p>
+        <h1 className="text-3xl font-bold text-black mb-2">Pengaturan Akun & Notifikasi</h1>
+        <p className="text-gray-600">Perbarui informasi profil dan preferensi notifikasi Anda.</p>
       </div>
 
       <div className="max-w-2xl">
@@ -89,6 +95,48 @@ export default function SiswaPengaturanPage() {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                 />
               </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h2 className="text-lg font-semibold text-black mb-6">Pengaturan Notifikasi</h2>
+            <div className="space-y-4">
+              <label className="flex items-center justify-between gap-4 p-4 rounded-lg border border-gray-200 bg-gray-50">
+                <div>
+                  <p className="text-sm font-medium text-black">Notifikasi Email</p>
+                  <p className="text-xs text-gray-500">Dapatkan pemberitahuan melalui email.</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={notificationSettings.email}
+                  onChange={(e) => setNotificationSettings({ ...notificationSettings, email: e.target.checked })}
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+              </label>
+              <label className="flex items-center justify-between gap-4 p-4 rounded-lg border border-gray-200 bg-gray-50">
+                <div>
+                  <p className="text-sm font-medium text-black">Notifikasi SMS</p>
+                  <p className="text-xs text-gray-500">Terima ringkasan lewat pesan singkat.</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={notificationSettings.sms}
+                  onChange={(e) => setNotificationSettings({ ...notificationSettings, sms: e.target.checked })}
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+              </label>
+              <label className="flex items-center justify-between gap-4 p-4 rounded-lg border border-gray-200 bg-gray-50">
+                <div>
+                  <p className="text-sm font-medium text-black">Notifikasi Aplikasi</p>
+                  <p className="text-xs text-gray-500">Dapatkan update langsung di dashboard.</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={notificationSettings.app}
+                  onChange={(e) => setNotificationSettings({ ...notificationSettings, app: e.target.checked })}
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+              </label>
             </div>
           </div>
 
