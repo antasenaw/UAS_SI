@@ -3,6 +3,7 @@
 import GuruProfileCard from '@/components/guruProfileCard'
 import { useMemo } from 'react'
 import { useSearch } from '@/app/providers'
+import { currentGuruProfile } from '@/lib/user/mockProfile'
 import { BookOpen, Users, TrendingUp, AlertCircle } from 'lucide-react'
 
 interface KelasSummary {
@@ -124,7 +125,7 @@ export default function GuruBeranda() {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-black mb-2">Selamat Datang, Ibu Siti</h1>
+        <h1 className="text-3xl font-bold text-black mb-2">Selamat Datang, {currentGuruProfile.name}</h1>
         <p className="text-gray-600">
           {searchActive ? `Hasil pencarian untuk "${searchQuery}"` : 'Kelola kelas dan pantau perkembangan siswa Anda'}
         </p>
@@ -134,10 +135,10 @@ export default function GuruBeranda() {
         {/* Right Column - Profile Card */}
         <div className="col-span-1">
           <GuruProfileCard
-            nama="Ibu Siti Nurhaliza, S.Pd"
-            nip="197503051998032001"
+            nama={currentGuruProfile.name}
+            nip={currentGuruProfile.nip}
             kelasWali="XII MIPA 4"
-            mataPelajaran={['Fisika', 'Praktikum Fisika']}
+            mataPelajaran={[currentGuruProfile.bidangStudi]}
           />
         </div>
 

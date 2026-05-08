@@ -51,7 +51,7 @@ export default function AdminKelasPage() {
           </p>
         </div>
         <button
-          onClick={() => setShowModal(true)}
+          onClick={() => alert('Fitur tambah kelas sedang dikembangkan. Silakan hubungi administrator.')}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
         >
           <Plus size={20} />

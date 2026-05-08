@@ -121,7 +121,9 @@ export default function AdminPeriodePage() {
             {searchActive ? `Hasil pencarian untuk "${searchQuery}"` : 'Kelola tahun ajaran dan semester'}
           </p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
+        <button 
+          onClick={() => alert('Fitur tambah periode akademik sedang dikembangkan. Silakan hubungi administrator.')}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
           <Plus size={20} />
           Tambah Periode
         </button>
@@ -235,12 +237,14 @@ export default function AdminPeriodePage() {
                   </div>
                 )}
               </div>
+            )}
             </div>
-          ))) : (
-            <div className="bg-white rounded-lg shadow-md p-10 text-center text-gray-600">
-          Tidak ada periode yang sesuai dengan pencarian.
-        </div>
-      )}
+          ))
+        ) : (
+          <div className="bg-white rounded-lg shadow-md p-10 text-center text-gray-600">
+            Tidak ada periode yang sesuai dengan pencarian.
+          </div>
+        )}
       </div>
     </div>
   )

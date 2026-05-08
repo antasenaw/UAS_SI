@@ -111,7 +111,9 @@ export default function AdminMataPelajaranPage() {
             {searchActive ? `Hasil pencarian untuk "${searchQuery}"` : 'Kelola data mata pelajaran dan pengajaran'}
           </p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
+        <button 
+          onClick={() => alert('Fitur tambah mata pelajaran sedang dikembangkan. Silakan hubungi administrator.')}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
           <Plus size={20} />
           Tambah Mata Pelajaran
         </button>
