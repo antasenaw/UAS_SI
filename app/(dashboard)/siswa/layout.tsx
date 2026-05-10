@@ -2,14 +2,18 @@
 
 import Sidebar from '@/components/Sidebar'
 import Topbar from '@/components/topbar'
-import { currentSiswaProfile } from '@/lib/user/mockProfile'
+import { useAuth } from '@/lib/auth/context'
 
 export default function SiswaLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const currentUser = currentSiswaProfile
+  const { user } = useAuth()
+  const currentUser = {
+    name: user?.name || 'User',
+    image: '/src/logo.png'
+  }
 
   return (
     <div className="flex h-screen bg-gray-50">

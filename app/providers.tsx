@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState } from 'react'
+import { AuthProvider } from '@/lib/auth/context'
 
 interface SearchContextType {
   searchQuery: string
@@ -13,9 +14,11 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   const [searchQuery, setSearchQuery] = useState('')
 
   return (
-    <SearchContext.Provider value={{ searchQuery, setSearchQuery }}>
-      {children}
-    </SearchContext.Provider>
+    <AuthProvider>
+      <SearchContext.Provider value={{ searchQuery, setSearchQuery }}>
+        {children}
+      </SearchContext.Provider>
+    </AuthProvider>
   )
 }
 

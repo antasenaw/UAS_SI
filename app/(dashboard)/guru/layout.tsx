@@ -2,14 +2,18 @@
 
 import Sidebar from '@/components/Sidebar'
 import Topbar from '@/components/topbar'
-import { currentGuruProfile } from '@/lib/user/mockProfile'
+import { useAuth } from '@/lib/auth/context'
 
 export default function GuruLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const currentUser = currentGuruProfile
+  const { user } = useAuth()
+  const currentUser = {
+    name: user?.name || 'Guru',
+    image: '/src/logo.png'
+  }
 
   return (
     <div className="flex h-screen bg-gray-50">
