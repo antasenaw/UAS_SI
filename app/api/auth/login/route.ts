@@ -2,6 +2,7 @@ import connectDB from "@/lib/mongodb";
 import { NextResponse } from "next/server";
 import User from "@/models/User";
 import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
 
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
@@ -38,7 +39,10 @@ export async function POST(request: Request) {
 
     // Check password
     console.log("Checking password");
-    const isPasswordValid = password === user.password_hash;
+    const isPasswordValid = await bcrypt.compare(
+      password,
+      user.password_hash
+    );
     console.log("Password valid:", isPasswordValid);
 
     if (!isPasswordValid) {

@@ -3,9 +3,11 @@
 import Link from "next/link"
 import ProfileCard from "@/components/profileCard"
 import { useSearch } from '@/app/providers'
-import { currentSiswaProfile } from '@/lib/user/mockProfile'
+
 import { ArrowRight } from "lucide-react"
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { useEffect, useState } from "react"
+
 
 interface MataPelajaran {
   id: string
@@ -108,7 +110,7 @@ const allTugas: Tugas[] = [
   },
 ]
 
-const siswaProfile = currentSiswaProfile
+
 
 // Helper: Get random items from array
 function getRandomItems<T>(items: T[], limit: number): T[] {
@@ -152,12 +154,40 @@ function calculateAverageScore(data: ScoreData[]): number {
 }
 
 export default function SiswaDashboard() {
+
+  const [dashboardData, setDashboardData] = useState<any>(null)
+  const siswaProfile = dashboardData?.profile
+
+useEffect(() => {
+  const fetchDashboard = async () => {
+    try {
+      const token = localStorage.getItem("authToken")
+
+      const res = await fetch("/api/siswa/dashboard", {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+
+      const data = await res.json()
+
+      if (data.success) {
+        setDashboardData(data)
+      }
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  fetchDashboard()
+}, [])
+
   const { searchQuery } = useSearch()
   const normalizedSearch = searchQuery.trim().toLowerCase()
   const searchActive = normalizedSearch.length > 0
 
-  const randomMataPelajaran = getRandomItems(allMataPelajaran, 3)
-  const upcomingTugas = getUpcomingTugas(allTugas)
+  const randomMataPelajaran = dashboardData?.subjects || []
+  const upcomingTugas = dashboardData?.assignments || []
   const averageScore = calculateAverageScore(dummyScoreData)
 
   const filteredMataPelajaran = allMataPelajaran.filter((mp) => {
@@ -186,7 +216,7 @@ export default function SiswaDashboard() {
           {/* Welcome Section */}
           <div className="bg-white text-black p-4 rounded-lg shadow-md border border-gray-200">
             <h1 className="text-xl sm:text-2xl font-semibold mb-1">
-              Selamat Datang, {siswaProfile.name}
+              Selamat Datang, {siswaProfile?.name}
             </h1>
             <p className="text-gray-600 text-xs sm:text-sm">Jangan lupa mengerjakan pekerjaan tepat waktu!</p>
           </div>
@@ -210,7 +240,7 @@ export default function SiswaDashboard() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-black">
             {mataPelajaranToShow.length > 0 ? (
-              mataPelajaranToShow.map((mp) => (
+              mataPelajaranToShow.map((mp: MataPelajaran) => (
                 <Link
                   key={mp.id}
                   href={`/siswa/mapel/${mp.id}`}
@@ -285,12 +315,12 @@ export default function SiswaDashboard() {
         <div className="col-span-4 lg:col-span-1 space-y-3 lg:self-start overflow-y-auto pr-2">
           {/* Profile Card */}
           <ProfileCard
-            nama={siswaProfile.name}
-            nis={siswaProfile.nis}
-            kelas={siswaProfile.kelas}
-            noAbsen={siswaProfile.noAbsen}
-            tahunMasuk={siswaProfile.tahunMasuk}
-            waliKelas={siswaProfile.waliKelas}
+            nama={siswaProfile?.name}
+            nis={siswaProfile?.nis}
+            kelas={siswaProfile?.kelas}
+            noAbsen={siswaProfile?.noAbsen}
+            tahunMasuk={siswaProfile?.tahunMasuk}
+            waliKelas={siswaProfile?.waliKelas}
           />
 
           {/* Pekerjaan Mendatang Header */}
@@ -309,7 +339,7 @@ export default function SiswaDashboard() {
           <div className="bg-white text-black p-3 rounded-lg shadow">
             <div className="flex flex-col gap-2">
               {tugasToShow.length > 0 ? (
-                tugasToShow.map((pekerjaan) => (
+                tugasToShow.map((pekerjaan: Tugas) => (
                   <Link
                     key={pekerjaan.id}
                     href="/siswa/mapel/tugas"
