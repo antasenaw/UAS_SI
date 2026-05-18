@@ -1,37 +1,22 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IEnrollment extends Document {
-  Student: mongoose.Types.ObjectId;
-  Class: mongoose.Types.ObjectId;
-  Period: mongoose.Types.ObjectId;
-  created_at: Date;
-  updated_at: Date;
+  studentId: mongoose.Types.ObjectId;
+  classId: mongoose.Types.ObjectId;
+  tanggalDaftar: Date;
+  status: 'Aktif' | 'Lulus' | 'Keluar';
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-const EnrollmentScheme = new Schema<IEnrollment>(
+const EnrollmentSchema = new Schema<IEnrollment>(
   {
-    Student: {
-      type: Schema.Types.ObjectId,
-      ref: 'User',
-      required: true
-    },
-    Class: {
-      type: Schema.Types.ObjectId,
-      ref: 'Class',
-      required: true
-    },
-    Period: {
-      type: Schema.Types.ObjectId,
-      ref: 'Period',
-      required: true
-    },
+    studentId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    classId: { type: Schema.Types.ObjectId, ref: 'Class', required: true },
+    tanggalDaftar: { type: Date, default: Date.now },
+    status: { type: String, enum: ['Aktif', 'Lulus', 'Keluar'], default: 'Aktif' },
   },
-  {
-    timestamps: {
-      createdAt: 'created_at',
-      updatedAt: 'updated_at',
-    },
-  }
+  { timestamps: true }
 );
 
-export default mongoose.models.Enrollment || mongoose.model<IEnrollment>('Enrollment', EnrollmentScheme);
+export default mongoose.models.Enrollment || mongoose.model<IEnrollment>('Enrollment', EnrollmentSchema);

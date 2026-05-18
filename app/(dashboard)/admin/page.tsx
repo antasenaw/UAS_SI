@@ -1,51 +1,62 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useSearch } from '@/app/providers'
 import { Users, BookOpen, Layers, Calendar, TrendingUp, Activity } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts'
 
-const dataGrafikSiswa = [
-  { kelas: 'X IPA', jumlah: 95 },
-  { kelas: 'X IPS', jumlah: 88 },
-  { kelas: 'XI IPA', jumlah: 102 },
-  { kelas: 'XI IPS', jumlah: 96 },
-  { kelas: 'XII IPA', jumlah: 122 },
-  { kelas: 'XII IPS', jumlah: 108 },
-]
-
-const dataPerkembanganNilai = [
-  { bulan: 'Januari', rata: 72 },
-  { bulan: 'Februari', rata: 74 },
-  { bulan: 'Maret', rata: 76 },
-  { bulan: 'April', rata: 75 },
-  { bulan: 'Mei', rata: 78 },
-  { bulan: 'Juni', rata: 80 },
-]
-
 export default function AdminDashboard() {
+  const [dashboardData, setDashboardData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
   const { searchQuery } = useSearch()
   const normalizedSearch = searchQuery.toLowerCase().trim()
   const searchActive = normalizedSearch.length > 0
 
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      try {
+        const res = await fetch("/api/admin/dashboard")
+        const data = await res.json()
+        if (data.success) {
+          setDashboardData(data)
+        }
+      } catch (err) {
+        console.error(err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchDashboard()
+  }, [])
+
   const filteredGrafikSiswa = useMemo(
     () =>
-      dataGrafikSiswa.filter((item) =>
+      (dashboardData?.distribution || []).filter((item: any) =>
         item.kelas.toLowerCase().includes(normalizedSearch)
       ),
-    [normalizedSearch]
+    [normalizedSearch, dashboardData]
   )
 
   const filteredPerkembanganNilai = useMemo(
     () =>
-      dataPerkembanganNilai.filter((item) =>
+      (dashboardData?.progress || []).filter((item: any) =>
         item.bulan.toLowerCase().includes(normalizedSearch)
       ),
-    [normalizedSearch]
+    [normalizedSearch, dashboardData]
   )
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
+
+  const stats = dashboardData?.stats
+
   return (
-    <div className="p-8">
+    <div className="p-8 bg-gray-50 min-h-screen">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-black mb-2">Dashboard Admin</h1>
         <p className="text-gray-600">
@@ -59,7 +70,7 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 text-sm font-medium">Total Siswa</p>
-              <p className="text-2xl font-bold text-black mt-2">611</p>
+              <p className="text-2xl font-bold text-black mt-2">{stats?.totalSiswa}</p>
             </div>
             <Users size={32} className="text-blue-100" />
           </div>
@@ -69,7 +80,7 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 text-sm font-medium">Total Guru</p>
-              <p className="text-2xl font-bold text-black mt-2">48</p>
+              <p className="text-2xl font-bold text-black mt-2">{stats?.totalGuru}</p>
             </div>
             <BookOpen size={32} className="text-green-100" />
           </div>
@@ -79,7 +90,7 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 text-sm font-medium">Total Kelas</p>
-              <p className="text-2xl font-bold text-black mt-2">18</p>
+              <p className="text-2xl font-bold text-black mt-2">{stats?.totalKelas}</p>
             </div>
             <Layers size={32} className="text-purple-100" />
           </div>
@@ -89,7 +100,7 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 text-sm font-medium">Mata Pelajaran</p>
-              <p className="text-2xl font-bold text-black mt-2">24</p>
+              <p className="text-2xl font-bold text-black mt-2">{stats?.totalMapel}</p>
             </div>
             <Calendar size={32} className="text-yellow-100" />
           </div>
@@ -99,7 +110,7 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 text-sm font-medium">Rata-rata Nilai</p>
-              <p className="text-2xl font-bold text-blue-600 mt-2">76.8</p>
+              <p className="text-2xl font-bold text-blue-600 mt-2">{stats?.rataRataNilai}</p>
             </div>
             <TrendingUp size={32} className="text-indigo-100" />
           </div>
@@ -109,7 +120,7 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 text-sm font-medium">Kehadiran</p>
-              <p className="text-2xl font-bold text-green-600 mt-2">94.2%</p>
+              <p className="text-2xl font-bold text-green-600 mt-2">{stats?.kehadiran}%</p>
             </div>
             <Activity size={32} className="text-red-100" />
           </div>
@@ -161,16 +172,16 @@ export default function AdminDashboard() {
           <div className="space-y-3">
             <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
               <span className="text-gray-700 font-medium">Tahun Ajaran</span>
-              <span className="font-bold text-black">2025/2026</span>
+              <span className="font-bold text-black">{dashboardData?.activePeriod?.tahunAjaran || "2024/2025"}</span>
             </div>
             <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
               <span className="text-gray-700 font-medium">Semester</span>
-              <span className="font-bold text-black">Genap</span>
+              <span className="font-bold text-black">{dashboardData?.activePeriod?.semester || "Ganjil"}</span>
             </div>
             <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
               <span className="text-gray-700 font-medium">Status</span>
-              <span className="inline-block px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-semibold">
-                Aktif
+              <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${dashboardData?.activePeriod?.status === 'Aktif' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                {dashboardData?.activePeriod?.status || "Aktif"}
               </span>
             </div>
           </div>
@@ -180,18 +191,15 @@ export default function AdminDashboard() {
         <div className="bg-white rounded-lg shadow-md p-6">
           <h2 className="text-lg font-semibold text-black mb-4">Update Terbaru Sistem</h2>
           <div className="space-y-3">
-            <div className="p-3 border-l-4 border-blue-500 bg-blue-50">
-              <p className="text-sm font-medium text-gray-700">Backup Data Automatik</p>
-              <p className="text-xs text-gray-600 mt-1">Jumat, 28 Februari 2026 23:00</p>
-            </div>
-            <div className="p-3 border-l-4 border-green-500 bg-green-50">
-              <p className="text-sm font-medium text-gray-700">Sinkronisasi LDAP Server</p>
-              <p className="text-xs text-gray-600 mt-1">Jumat, 28 Februari 2026 18:30</p>
-            </div>
-            <div className="p-3 border-l-4 border-yellow-500 bg-yellow-50">
-              <p className="text-sm font-medium text-gray-700">Update Nilai Sudah Selesai</p>
-              <p className="text-xs text-gray-600 mt-1">Jumat, 28 Februari 2026 15:00</p>
-            </div>
+            {dashboardData?.recentActivities?.map((activity: any, i: number) => (
+              <div key={i} className={`p-3 border-l-4 ${activity.type === 'submission' ? 'border-blue-500 bg-blue-50' : 'border-green-500 bg-green-50'}`}>
+                <p className="text-sm font-medium text-gray-700">{activity.title}</p>
+                <p className="text-xs text-gray-600 mt-1">{activity.user} • {activity.time}</p>
+              </div>
+            ))}
+            {(!dashboardData?.recentActivities || dashboardData.recentActivities.length === 0) && (
+              <p className="text-sm text-gray-500 text-center py-4">Belum ada aktivitas terbaru</p>
+            )}
           </div>
         </div>
       </div>

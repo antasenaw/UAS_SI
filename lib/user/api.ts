@@ -24,7 +24,7 @@ interface UpdateUserPayload {
   status?: 'Aktif' | 'Nonaktif';
 }
 
-const baseUrl = process.env.NEXT_PUBLIC_SITE_URL;
+const baseUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export async function getUsers(filters?: { role?: string }) {
   const endpoint = '/api/user';

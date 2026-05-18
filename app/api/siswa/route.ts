@@ -16,200 +16,87 @@ export async function GET(request: NextRequest) {
   try {
     await connectDB();
 
-    // =========================
-    // GET TOKEN
-    // =========================
-
     const token =
       request.cookies.get("authToken")?.value ||
       request.headers.get("authorization")?.replace("Bearer ", "");
 
     if (!token) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Unauthorized",
-        },
-        {
-          status: 401,
-        }
-      );
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
-    // =========================
-    // VERIFY TOKEN
-    // =========================
-
-    const decoded = jwt.verify(token, JWT_SECRET) as {
-      userId: string;
-      role: string;
-    };
-
-    // =========================
-    // GET USER
-    // =========================
-
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; role: string };
     const siswa = await User.findById(decoded.userId);
 
     if (!siswa || siswa.role !== "Siswa") {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Siswa tidak ditemukan",
-        },
-        {
-          status: 404,
-        }
-      );
+      return NextResponse.json({ success: false, error: "Siswa tidak ditemukan" }, { status: 404 });
     }
 
-    // =========================
-    // GET ENROLLMENT
-    // =========================
-
-    const enrollment = await Enrollment.findOne({
-      studentId: siswa._id,
-    });
-
+    const enrollment = await Enrollment.findOne({ studentId: siswa._id });
     if (!enrollment) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Enrollment tidak ditemukan",
-        },
-        {
-          status: 404,
-        }
-      );
+      return NextResponse.json({ success: false, error: "Enrollment tidak ditemukan" }, { status: 404 });
     }
-
-    // =========================
-    // GET CLASS
-    // =========================
 
     const kelas = await ClassModel.findById(enrollment.classId);
+    const waliKelas = await User.findById(kelas?.waliKelas);
 
-    // =========================
-    // GET WALI KELAS
-    // =========================
-
-    const waliKelas = await User.findById(kelas.waliKelas);
-
-    // =========================
-    // GET SUBJECTS
-    // =========================
-
-    const classSubjects = await ClassSubject.find({
-      classId: kelas._id,
-    });
-
+    const classSubjects = await ClassSubject.find({ classId: enrollment.classId });
     const subjectIds = classSubjects.map((cs) => cs.subjectId);
+    const subjects = await Subject.find({ _id: { $in: subjectIds } });
 
-    const subjects = await Subject.find({
-      _id: {
-        $in: subjectIds,
-      },
-    });
-
-    // =========================
-    // GET ASSIGNMENTS
-    // =========================
-
-    const assignments = await Assignment.find({
-      classId: kelas._id,
-    })
+    const assignments = await Assignment.find({ classId: enrollment.classId })
       .sort({ deadline: 1 })
       .limit(5);
 
-    // =========================
-    // GET GRADES
-    // =========================
-
-    const grades = await Grade.find({
-      studentId: siswa._id,
-    });
-
-    const rataRata =
-      grades.length > 0
-        ? Math.round(
-            grades.reduce((acc, item) => acc + item.nilai, 0) /
-              grades.length
-          )
+    const grades = await Grade.find({ studentId: siswa._id });
+    const rataRata = grades.length > 0
+        ? Math.round(grades.reduce((acc, item) => acc + item.nilai, 0) / grades.length)
         : 0;
-
-    // =========================
-    // RESPONSE
-    // =========================
 
     return NextResponse.json({
       success: true,
-
       profile: {
         name: siswa.name,
         nis: siswa.noInduk,
-        kelas: kelas.namaKelas,
+        kelas: kelas ? `${kelas.angkatan} ${kelas.jurusan} ${kelas.namaKelas}` : "-",
         waliKelas: waliKelas?.name || "-",
-        tahunMasuk: kelas.angkatan,
+        tahunMasuk: kelas?.createdAt.getFullYear().toString() || "-",
       },
-
       subjects: classSubjects.map((cs) => {
-        const subject = subjects.find(
-          (s) => s._id.toString() === cs.subjectId.toString()
-        );
-
+        const subject = subjects.find(s => s._id.toString() === cs.subjectId.toString());
         return {
           id: cs._id,
           nama: subject?.namaMataPelajaran || "-",
           jam: `${cs.hari} ${cs.jamMulai} - ${cs.jamSelesai}`,
         };
       }),
-
       assignments: assignments.map((a) => ({
         id: a._id,
         namaPekerjaan: a.judul,
         deadline: a.deadline,
-        status: a.status,
+        status: 'belum',
       })),
-
       grades,
-
       rataRata,
+      chartData: {
+        scoreData: grades.map(g => ({
+          nama: `Tugas ${g.createdAt.getMonth() + 1}`,
+          score: g.nilai || 0,
+          deadline: g.createdAt.toLocaleString('default', { month: 'short' })
+        })).slice(-6),
+        averageData: Array.from({ length: 6 }, (_, i) => {
+          const month = new Date();
+          month.setMonth(month.getMonth() - (5 - i));
+          const monthStr = month.toLocaleString('default', { month: 'short' });
+          const monthGrades = grades.filter(g => g.createdAt.getMonth() === month.getMonth());
+          const avg = monthGrades.length > 0 
+            ? monthGrades.reduce((acc, curr) => acc + (curr.nilai || 0), 0) / monthGrades.length 
+            : 0;
+          return { bulan: monthStr, rataRata: Math.round(avg) };
+        })
+      }
     });
   } catch (error) {
     console.error(error);
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Internal server error",
-      },
-      {
-        status: 500,
-      }
-    );
-  }
-}
-
-export async function POST(request: Request) {
-  try {
-    await connectDB();
-    
-    const body = await request.json();
-    
-    const newSiswa = await User.create({
-      ...body,
-      role: 'Siswa',
-      status: 'Aktif'
-    });
-    
-    return NextResponse.json(
-      { success: true, data: newSiswa },
-      { status: 201 }
-    );
-  } catch (error) {
-    return NextResponse.json(
-      { success: false, error: `Failed to create siswa ${error}` },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
   }
 }

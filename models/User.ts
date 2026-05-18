@@ -7,58 +7,22 @@ export interface IUser extends Document {
   noInduk: string;
   role: 'Admin' | 'Guru' | 'Siswa';
   status: 'Aktif' | 'Nonaktif';
-  created_at: Date;
-  updated_at: Date;
+  isWaliKelas: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const UserSchema = new Schema<IUser>(
   {
-    name: {
-      type: String,
-      required: [true, 'Nama wajib diisi'],
-      trim: true,
-      maxlength: [100, 'Nama maksimal 100 karakter'],
-    },
-    email: {
-      type: String,
-      required: [true, 'Wajib diisi'],
-      trim: true,
-        maxlength: [100, 'Maksimal 100 karakter'],
-    },
-    noInduk: {
-      type: String,
-      required: [true, 'Wajib diisi'],
-      trim: true,
-        maxlength: [100, 'Maksimal 100 karakter'],
-    },
-    password_hash: {
-      type: String,
-      required: [true, 'Password wajib diisi'],
-      select: false, // Tidak include di query by default untuk keamanan
-    },
-    role: {
-      type: String,
-      enum: {
-        values: ['Admin', 'Guru', 'Siswa'],
-        message: 'Role harus Admin, Guru, atau Siswa',
-      },
-      required: true,
-    },
-    status: {
-      type: String,
-      enum: {
-        values: ['Aktif', 'Nonaktif'],
-        message: 'Role harus Aktif atau Nonaktif',
-      },
-      required: true,
-    },
+    name: { type: String, required: true, trim: true },
+    email: { type: String, required: true, unique: true, trim: true },
+    password_hash: { type: String, required: true, select: false },
+    noInduk: { type: String, required: true, unique: true, trim: true },
+    role: { type: String, enum: ['Admin', 'Guru', 'Siswa'], required: true },
+    status: { type: String, enum: ['Aktif', 'Nonaktif'], default: 'Aktif' },
+    isWaliKelas: { type: Boolean, default: false },
   },
-  {
-    timestamps: {
-      createdAt: 'created_at',
-      updatedAt: 'updated_at',
-    },
-  }
+  { timestamps: true }
 );
 
 export default mongoose.models.User || mongoose.model<IUser>('User', UserSchema);

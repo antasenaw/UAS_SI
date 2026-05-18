@@ -36,97 +36,24 @@ interface AverageData {
   rataRata: number
 }
 
-// Data dummy mata pelajaran - lengkap
-const allMataPelajaran: MataPelajaran[] = [
-  { id: '1', nama: 'Matematika', guru: 'Ibu Siti', jam: '08:00-09:30' },
-  { id: '2', nama: 'Fisika', guru: 'Pak Ahmad', jam: '09:45-11:15' },
-  { id: '3', nama: 'Bahasa Indonesia', guru: 'Ibu Rina', jam: '13:00-14:30' },
-  { id: '4', nama: 'Kimia', guru: 'Pak Budi', jam: '10:00-11:30' },
-  { id: '5', nama: 'Biologi', guru: 'Ibu Maya', jam: '11:45-13:15' },
-  { id: '6', nama: 'Sejarah', guru: 'Pak Doni', jam: '14:30-16:00' },
-]
-
-// Data dummy untuk score pengumpulan tugas
-const dummyScoreData: ScoreData[] = [
-  { nama: 'Tugas 1', score: 85, deadline: 'Jan' },
-  { nama: 'Tugas 2', score: 90, deadline: 'Feb' },
-  { nama: 'Tugas 3', score: 78, deadline: 'Mar' },
-  { nama: 'Tugas 4', score: 92, deadline: 'Apr' },
-  { nama: 'Tugas 5', score: 88, deadline: 'May' },
-  { nama: 'Tugas 6', score: 95, deadline: 'Jun' },
-]
-
-// Data dummy untuk rata-rata nilai per bulan
-const dummyAverageData: AverageData[] = [
-  { bulan: 'Jan', rataRata: 85 },
-  { bulan: 'Feb', rataRata: 87 },
-  { bulan: 'Mar', rataRata: 82 },
-  { bulan: 'Apr', rataRata: 89 },
-  { bulan: 'May', rataRata: 88 },
-  { bulan: 'Jun', rataRata: 91 },
-]
-
-// Data dummy pekerjaan - semua
-const allTugas: Tugas[] = [
-  {
-    id: '1',
-    namaPekerjaan: 'Soal Latihan Bab 5',
-    deadline: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
-    mataKuliahId: '1',
-    mataKuliah: 'Matematika',
-    status: 'belum'
-  },
-  {
-    id: '2',
-    namaPekerjaan: 'Essay Kebebasan Pers',
-    deadline: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000),
-    mataKuliahId: '3',
-    mataKuliah: 'Bahasa Indonesia',
-    status: 'proses'
-  },
-  {
-    id: '3',
-    namaPekerjaan: 'Laporan Praktik Fisika',
-    deadline: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
-    mataKuliahId: '2',
-    mataKuliah: 'Fisika',
-    status: 'belum'
-  },
-  {
-    id: '4',
-    namaPekerjaan: 'Ulangan Harian Kimia',
-    deadline: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
-    mataKuliahId: '4',
-    mataKuliah: 'Kimia',
-    status: 'belum'
-  },
-  {
-    id: '5',
-    namaPekerjaan: 'Presentasi Biologi',
-    deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-    mataKuliahId: '5',
-    mataKuliah: 'Biologi',
-    status: 'proses'
-  },
-]
-
-
-
 // Helper: Get random items from array
 function getRandomItems<T>(items: T[], limit: number): T[] {
+  if (!items) return []
   const shuffled = [...items].sort(() => 0.5 - Math.random())
   return shuffled.slice(0, Math.min(limit, items.length))
 }
 
 function getUpcomingTugas(tugas: Tugas[], limit: number = 3): Tugas[] {
-  return tugas
-    .sort((a, b) => a.deadline.getTime() - b.deadline.getTime())
+  if (!tugas) return []
+  return [...tugas]
+    .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())
     .slice(0, limit)
 }
 
-function formatDeadline(date: Date): string {
+function formatDeadline(date: any): string {
+  const d = new Date(date)
   const today = new Date()
-  const diffTime = date.getTime() - today.getTime()
+  const diffTime = d.getTime() - today.getTime()
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
 
   if (diffDays === 0) return 'Hari ini'
@@ -138,74 +65,79 @@ function formatDeadline(date: Date): string {
 function getStatusColor(status: string): string {
   switch (status) {
     case 'belum':
+    case 'Missing':
       return 'bg-red-100 text-red-800'
     case 'proses':
+    case 'Submitted':
       return 'bg-yellow-100 text-yellow-800'
     case 'selesai':
+    case 'Reviewed':
       return 'bg-green-100 text-green-800'
     default:
       return 'bg-gray-100 text-gray-800'
   }
 }
 
-function calculateAverageScore(data: ScoreData[]): number {
-  const total = data.reduce((sum, item) => sum + item.score, 0)
-  return Math.round(total / data.length)
-}
-
 export default function SiswaDashboard() {
-
   const [dashboardData, setDashboardData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
   const siswaProfile = dashboardData?.profile
 
-useEffect(() => {
-  const fetchDashboard = async () => {
-    try {
-      const token = localStorage.getItem("authToken")
-
-      const res = await fetch("/api/siswa/dashboard", {
-        headers: {
-          Authorization: `Bearer ${token}`
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      try {
+        const token = localStorage.getItem("authToken")
+        const res = await fetch("/api/siswa", {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        })
+        const data = await res.json()
+        if (data.success) {
+          setDashboardData(data)
         }
-      })
-
-      const data = await res.json()
-
-      if (data.success) {
-        setDashboardData(data)
+      } catch (err) {
+        console.error(err)
+      } finally {
+        setLoading(false)
       }
-    } catch (err) {
-      console.error(err)
     }
-  }
-
-  fetchDashboard()
-}, [])
+    fetchDashboard()
+  }, [])
 
   const { searchQuery } = useSearch()
   const normalizedSearch = searchQuery.trim().toLowerCase()
   const searchActive = normalizedSearch.length > 0
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
+
   const randomMataPelajaran = dashboardData?.subjects || []
   const upcomingTugas = dashboardData?.assignments || []
-  const averageScore = calculateAverageScore(dummyScoreData)
+  const scoreData = dashboardData?.chartData?.scoreData || []
+  const averageData = dashboardData?.chartData?.averageData || []
 
-  const filteredMataPelajaran = allMataPelajaran.filter((mp) => {
-    return [mp.nama, mp.guru, mp.jam].some((value) =>
-      value.toLowerCase().includes(normalizedSearch)
+  const filteredMataPelajaran = (dashboardData?.subjects || []).filter((mp: any) => {
+    return [mp.nama, mp.jam].some((value) =>
+      value?.toLowerCase().includes(normalizedSearch)
     )
   })
 
-  const filteredTugas = allTugas.filter((tugas) => {
-    return [tugas.namaPekerjaan, tugas.mataKuliah, tugas.status]
-      .some((value) => value.toLowerCase().includes(normalizedSearch))
+  const filteredTugas = (dashboardData?.assignments || []).filter((tugas: any) => {
+    return [tugas.namaPekerjaan, tugas.status]
+      .some((value) => value?.toLowerCase().includes(normalizedSearch))
   })
 
   const mataPelajaranToShow = searchActive ? filteredMataPelajaran : randomMataPelajaran
   const tugasToShow = searchActive ? filteredTugas : upcomingTugas
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-screen bg-gray-50">
      
 
       <div className="grid grid-cols-4 gap-4 p-2 sm:p-4 flex-1 overflow-hidden">
@@ -276,7 +208,7 @@ useEffect(() => {
             <div className="bg-white text-black p-4 rounded-lg shadow border border-gray-200">
               <h3 className="text-sm font-semibold mb-2">Score Pengumpulan Tugas</h3>
               <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={dummyScoreData}>
+                <BarChart data={scoreData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="deadline" tick={{ fontSize: 12 }} />
                   <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />
@@ -290,7 +222,7 @@ useEffect(() => {
             <div className="bg-white text-black p-4 rounded-lg shadow border border-gray-200">
               <h3 className="text-sm font-semibold mb-2">Rata-rata Nilai per Bulan</h3>
               <ResponsiveContainer width="100%" height={220}>
-                <LineChart data={dummyAverageData}>
+                <LineChart data={averageData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="bulan" tick={{ fontSize: 12 }} />
                   <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />

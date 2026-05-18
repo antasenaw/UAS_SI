@@ -5,129 +5,33 @@ import Period from "@/models/Period";
 export async function GET(request: Request) {
   try {
     await connectDB();
-    
     const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
-    const active = searchParams.get('active');
+    const activeOnly = searchParams.get('active');
 
-    let query = {};
-    if (id) {
-      query = { _id: id };
-    } else if (active) {
-      query = { isActive: active === 'true' };
+    if (activeOnly === 'true') {
+      const activePeriod = await Period.findOne({ aktif: true });
+      return NextResponse.json({ success: true, data: activePeriod });
     }
 
-    const periods = await Period.find(query);
-    
-    return NextResponse.json({
-      success: true,
-      count: periods.length,
-      data: periods
-    });
-  } catch {
-    return NextResponse.json(
-      { success: false, error: 'Failed to fetch periods' },
-      { status: 500 }
-    );
+    const periods = await Period.find().sort({ createdAt: -1 });
+    return NextResponse.json({ success: true, data: periods });
+  } catch (error) {
+    return NextResponse.json({ success: false, error: 'Failed to fetch periods' }, { status: 500 });
   }
 }
 
 export async function POST(request: Request) {
   try {
     await connectDB();
-    
     const body = await request.json();
     
+    if (body.aktif) {
+      await Period.updateMany({}, { aktif: false });
+    }
+
     const newPeriod = await Period.create(body);
-    
-    return NextResponse.json(
-      { success: true, data: newPeriod },
-      { status: 201 }
-    );
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Failed to create period';
-    return NextResponse.json(
-      { success: false, error: errorMessage },
-      { status: 400 }
-    );
-  }
-}
-
-export async function PUT(request: Request) {
-  try {
-    await connectDB();
-    
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
-
-    if (!id) {
-      return NextResponse.json(
-        { success: false, error: 'ID is required' },
-        { status: 400 }
-      );
-    }
-
-    const body = await request.json();
-    
-    const updatedPeriod = await Period.findByIdAndUpdate(
-      id,
-      body,
-      { new: true, runValidators: true }
-    );
-
-    if (!updatedPeriod) {
-      return NextResponse.json(
-        { success: false, error: 'Tahun ajaran tidak ditemukan' },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: updatedPeriod
-    });
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Failed to update period';
-    return NextResponse.json(
-      { success: false, error: errorMessage },
-      { status: 400 }
-    );
-  }
-}
-
-export async function DELETE(request: Request) {
-  try {
-    await connectDB();
-    
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
-
-    if (!id) {
-      return NextResponse.json(
-        { success: false, error: 'ID is required' },
-        { status: 400 }
-      );
-    }
-
-    const deletedPeriod = await Period.findByIdAndDelete(id);
-
-    if (!deletedPeriod) {
-      return NextResponse.json(
-        { success: false, error: 'Tahun ajaran tidak ditemukan' },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      message: 'Tahun ajaran berhasil dihapus',
-      data: deletedPeriod
-    });
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Failed to delete period';
-    return NextResponse.json(
-      { success: false, error: errorMessage },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: true, data: newPeriod }, { status: 201 });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 400 });
   }
 }

@@ -1,44 +1,28 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IAssignment extends Document {
-  ClassSubject: mongoose.Types.ObjectId;
-  title: string;
-  description: string;
-  dueDate: Date;
-  //TODO: add assignment types along with weight (tugas, ulangan, kuis, uts, uas)
-  attachment: string[];
-  created_at: Date;
-  updated_at: Date;
+  judul: string;
+  deskripsi: string;
+  mataPelajaran: mongoose.Types.ObjectId;
+  classId: mongoose.Types.ObjectId;
+  deadline: Date;
+  teacherId: mongoose.Types.ObjectId;
+  status: 'Aktif' | 'Selesai';
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-const AssignmentScheme = new Schema<IAssignment>(
+const AssignmentSchema = new Schema<IAssignment>(
   {
-    ClassSubject: {
-      type: Schema.Types.ObjectId,
-      ref: 'ClassSubject',
-      required: [true, 'Kelas dan mapel harus ada']
-    },
-    title: {
-      type: String,
-      required: [true, 'Judul harus ada'],
-      trim: true,
-      maxlength: [100, 'Judul maximal 100 karakter']
-    },
-    description: {
-      type: String,
-      trim: true
-    },
-    attachment: [{
-      type: String,
-      trim: true
-    }]
+    judul: { type: String, required: true },
+    deskripsi: { type: String },
+    mataPelajaran: { type: Schema.Types.ObjectId, ref: 'Subject', required: true },
+    classId: { type: Schema.Types.ObjectId, ref: 'Class', required: true },
+    deadline: { type: Date, required: true },
+    teacherId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    status: { type: String, enum: ['Aktif', 'Selesai'], default: 'Aktif' },
   },
-  {
-    timestamps: {
-      createdAt: 'created_at',
-      updatedAt: 'updated_at',
-    },
-  }
+  { timestamps: true }
 );
 
-export default mongoose.models.Assignment || mongoose.model<IAssignment>('Assignment', AssignmentScheme);
+export default mongoose.models.Assignment || mongoose.model<IAssignment>('Assignment', AssignmentSchema);

@@ -1,42 +1,26 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IMaterial extends Document {
-  ClassSubject: mongoose.Types.ObjectId;
-  title: string;
-  description: string;
-  attachment: string[];
-  created_at: Date;
-  updated_at: Date;
+  judul: string;
+  deskripsi: string;
+  mataPelajaran: mongoose.Types.ObjectId;
+  teacherId: mongoose.Types.ObjectId;
+  file: string;
+  tanggalUpload: Date;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-const MaterialScheme = new Schema<IMaterial>(
+const MaterialSchema = new Schema<IMaterial>(
   {
-    ClassSubject: {
-      type: Schema.Types.ObjectId,
-      ref: 'ClassSubject',
-      required: [true, 'Mapel dan kelas harus ada']
-    },
-    title: {
-      type: String,
-      required: [true, 'Judul materi harus ada'],
-      trim: true,
-      maxlength: [100, 'Judul maksimal 100 karakter'],
-    },
-    description: {
-      type: String,
-      trim: true
-    },
-    attachment: [{
-      type: String,
-      trim: true
-    }]
+    judul: { type: String, required: true },
+    deskripsi: { type: String },
+    mataPelajaran: { type: Schema.Types.ObjectId, ref: 'Subject', required: true },
+    teacherId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    file: { type: String, required: true },
+    tanggalUpload: { type: Date, default: Date.now },
   },
-  {
-    timestamps: {
-      createdAt: 'created_at',
-      updatedAt: 'updated_at',
-    },
-  }
+  { timestamps: true }
 );
 
-export default mongoose.models.Material || mongoose.model<IMaterial>('Material', MaterialScheme);
+export default mongoose.models.Material || mongoose.model<IMaterial>('Material', MaterialSchema);

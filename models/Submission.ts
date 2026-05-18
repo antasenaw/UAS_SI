@@ -1,50 +1,24 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface ISubmission extends Document {
-  Assignment: mongoose.Types.ObjectId;
-  Student: mongoose.Types.ObjectId;
-  attachment: string[];
-  status: 'Submitted' | 'Late' | 'Missing' | 'Reviewed';
-  score: number;
-  created_at: Date;
-  updated_at: Date;
+  assignmentId: mongoose.Types.ObjectId;
+  studentId: mongoose.Types.ObjectId;
+  file: string;
+  tanggalSubmit: Date;
+  status: 'Draft' | 'Submitted' | 'Graded';
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-const SubmissionScheme = new Schema<ISubmission>(
+const SubmissionSchema = new Schema<ISubmission>(
   {
-    Assignment: {
-      type: Schema.Types.ObjectId,
-      ref: 'Assignment',
-      required: [true, 'Tugas harus ada']
-    },
-    Student: {
-      type: Schema.Types.ObjectId,
-      ref: 'User',
-      required: [true, 'Siswa harus ada']
-    },
-    attachment: [{
-      type: String,
-      trim: true
-    }],
-    status: {
-      type: String,
-      enum: {
-        values: ['Submitted', 'Late', 'Missing', 'Reviewed'],
-        message: 'Status harus Submitted, Late, Missing, Reviewed'
-      },
-      default: 'Submitted'
-    },
-    score: {
-      type: Number,
-      min: [0, 'Nilai tidak boleh negatif']
-    }
+    assignmentId: { type: Schema.Types.ObjectId, ref: 'Assignment', required: true },
+    studentId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    file: { type: String, required: true },
+    tanggalSubmit: { type: Date, default: Date.now },
+    status: { type: String, enum: ['Draft', 'Submitted', 'Graded'], default: 'Submitted' },
   },
-  {
-    timestamps: {
-      createdAt: 'created_at',
-      updatedAt: 'updated_at',
-    },
-  }
+  { timestamps: true }
 );
 
-export default mongoose.models.Submission || mongoose.model<ISubmission>('Submission', SubmissionScheme);
+export default mongoose.models.Submission || mongoose.model<ISubmission>('Submission', SubmissionSchema);

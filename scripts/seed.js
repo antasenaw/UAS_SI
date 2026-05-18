@@ -70,7 +70,7 @@ async function main() {
     for (const col of collections) {
       try {
         await db.collection(col).drop();
-      } catch (err) {}
+      } catch (err) { }
     }
 
     // =========================
@@ -174,6 +174,10 @@ async function main() {
     const subjectDocs = [];
 
     const addSubject = (nama, kategori, jurusan, kode) => {
+
+      const guru =
+        guruList[randomBetween(0, guruList.length - 1)];
+
       subjectDocs.push({
         _id: new ObjectId(),
         namaMataPelajaran: nama,
@@ -182,6 +186,7 @@ async function main() {
         jurusan,
         deskripsi: `Mata pelajaran ${nama}`,
         status: "Aktif",
+        pengampu: guru._id,
         createdAt: new Date(),
       });
     };
@@ -277,244 +282,244 @@ async function main() {
     await db.collection("enrollments").insertMany(enrollments);
 
     // =========================
-// CLASS SUBJECTS
-// =========================
+    // CLASS SUBJECTS
+    // =========================
 
-const classSubjects = [];
+    const classSubjects = [];
 
-const teacherMap = {};
+    const teacherMap = {};
 
-// Assign guru tetap per subject
-for (const subject of subjectDocs) {
-  const guru =
-    guruList[randomBetween(0, guruList.length - 1)];
+    // Assign guru tetap per subject
+    for (const subject of subjectDocs) {
+      const guru =
+        guruList[randomBetween(0, guruList.length - 1)];
 
-  teacherMap[subject._id.toString()] = guru._id;
-}
-
-let roomCounter = 1;
-
-for (const kelas of classes) {
-  const allowedSubjects = subjectDocs.filter((s) => {
-    if (s.jurusan === "Semua") return true;
-    return s.jurusan === kelas.jurusan;
-  });
-
-  let dayIndex = 0;
-  let slotIndex = 0;
-
-  for (const subject of allowedSubjects) {
-    const teacherId =
-      teacherMap[subject._id.toString()];
-
-    const hari = HARI[dayIndex % HARI.length];
-
-    const jamMulai = SLOT_JAM[slotIndex][0];
-    const jamSelesai = SLOT_JAM[slotIndex][1];
-
-    classSubjects.push({
-      _id: new ObjectId(),
-      classId: kelas._id,
-      subjectId: subject._id,
-      guruPengajar: teacherId,
-      hari,
-      jamMulai,
-      jamSelesai,
-      ruangKelas: `R-${roomCounter}`,
-      status: "Aktif",
-      createdAt: new Date(),
-    });
-
-    slotIndex++;
-
-    if (slotIndex >= SLOT_JAM.length) {
-      slotIndex = 0;
-      dayIndex++;
-    }
-  }
-
-  roomCounter++;
-}
-
-await db
-  .collection("class_subjects")
-  .insertMany(classSubjects);
-
-  // =========================
-// ASSIGNMENTS
-// =========================
-
-const assignments = [];
-
-for (const cs of classSubjects) {
-  const subject = subjectDocs.find(
-    (s) =>
-      s._id.toString() ===
-      cs.subjectId.toString()
-  );
-
-  for (let i = 1; i <= 5; i++) {
-    const deadline = new Date();
-
-    deadline.setDate(
-      deadline.getDate() + randomBetween(3, 30)
-    );
-
-    assignments.push({
-      _id: new ObjectId(),
-
-      judul: `Tugas ${subject.namaMataPelajaran} ${i}`,
-
-      deskripsi: `Kerjakan tugas ${subject.namaMataPelajaran} pertemuan ${i}`,
-
-      mataPelajaran: subject._id,
-
-      classId: cs.classId,
-
-      teacherId: cs.guruPengajar,
-
-      deadline,
-
-      status: "Aktif",
-
-      createdAt: new Date(),
-    });
-  }
-}
-
-await db
-  .collection("assignments")
-  .insertMany(assignments);
-
-  // =========================
-// SUBMISSIONS
-// =========================
-
-const submissions = [];
-
-for (const assignment of assignments) {
-  const classEnrollments =
-    enrollments.filter(
-      (e) =>
-        e.classId.toString() ===
-        assignment.classId.toString()
-    );
-
-  for (const enr of classEnrollments) {
-    const rand = Math.random();
-
-    let status = "Terkumpul";
-
-    if (rand < 0.1) {
-      status = "Belum Mengumpulkan";
-    } else if (rand < 0.25) {
-      status = "Terlambat";
+      teacherMap[subject._id.toString()] = guru._id;
     }
 
-    submissions.push({
-      _id: new ObjectId(),
+    let roomCounter = 1;
 
-      assignmentId: assignment._id,
+    for (const kelas of classes) {
+      const allowedSubjects = subjectDocs.filter((s) => {
+        if (s.jurusan === "Semua") return true;
+        return s.jurusan === kelas.jurusan;
+      });
 
-      studentId: enr.studentId,
+      let dayIndex = 0;
+      let slotIndex = 0;
 
-      file:
-        status === "Belum Mengumpulkan"
-          ? null
-          : `submission_${enr.studentId}.pdf`,
+      for (const subject of allowedSubjects) {
+        const teacherId =
+          teacherMap[subject._id.toString()];
 
-      tanggalSubmit:
-        status === "Belum Mengumpulkan"
-          ? null
-          : faker.date.recent({ days: 15 }),
+        const hari = HARI[dayIndex % HARI.length];
 
-      status,
+        const jamMulai = SLOT_JAM[slotIndex][0];
+        const jamSelesai = SLOT_JAM[slotIndex][1];
 
-      createdAt: new Date(),
-    });
-  }
-}
+        classSubjects.push({
+          _id: new ObjectId(),
+          classId: kelas._id,
+          subjectId: subject._id,
+          guruPengajar: teacherId,
+          hari,
+          jamMulai,
+          jamSelesai,
+          ruangKelas: `R-${roomCounter}`,
+          status: "Aktif",
+          createdAt: new Date(),
+        });
 
-await db
-  .collection("submissions")
-  .insertMany(submissions);
+        slotIndex++;
 
-  // =========================
-// GRADES
-// =========================
-
-const grades = [];
-
-for (const enr of enrollments) {
-  const kelas = classes.find(
-    (c) =>
-      c._id.toString() ===
-      enr.classId.toString()
-  );
-
-  const allowedSubjects =
-    subjectDocs.filter((s) => {
-      if (s.jurusan === "Semua") {
-        return true;
+        if (slotIndex >= SLOT_JAM.length) {
+          slotIndex = 0;
+          dayIndex++;
+        }
       }
 
-      return s.jurusan === kelas.jurusan;
-    });
+      roomCounter++;
+    }
 
-  for (const subject of allowedSubjects) {
-    const nilai = randomBetween(65, 100);
+    await db
+      .collection("class_subjects")
+      .insertMany(classSubjects);
 
-    const cs = classSubjects.find(
-      (x) =>
-        x.classId.toString() ===
-          kelas._id.toString() &&
-        x.subjectId.toString() ===
-          subject._id.toString()
+    // =========================
+    // ASSIGNMENTS
+    // =========================
+
+    const assignments = [];
+
+    for (const cs of classSubjects) {
+      const subject = subjectDocs.find(
+        (s) =>
+          s._id.toString() ===
+          cs.subjectId.toString()
+      );
+
+      for (let i = 1; i <= 5; i++) {
+        const deadline = new Date();
+
+        deadline.setDate(
+          deadline.getDate() + randomBetween(3, 30)
+        );
+
+        assignments.push({
+          _id: new ObjectId(),
+
+          judul: `Tugas ${subject.namaMataPelajaran} ${i}`,
+
+          deskripsi: `Kerjakan tugas ${subject.namaMataPelajaran} pertemuan ${i}`,
+
+          mataPelajaran: subject._id,
+
+          classId: cs.classId,
+
+          teacherId: cs.guruPengajar,
+
+          deadline,
+
+          status: "Aktif",
+
+          createdAt: new Date(),
+        });
+      }
+    }
+
+    await db
+      .collection("assignments")
+      .insertMany(assignments);
+
+    // =========================
+    // SUBMISSIONS
+    // =========================
+
+    const submissions = [];
+
+    for (const assignment of assignments) {
+      const classEnrollments =
+        enrollments.filter(
+          (e) =>
+            e.classId.toString() ===
+            assignment.classId.toString()
+        );
+
+      for (const enr of classEnrollments) {
+        const rand = Math.random();
+
+        let status = "Terkumpul";
+
+        if (rand < 0.1) {
+          status = "Belum Mengumpulkan";
+        } else if (rand < 0.25) {
+          status = "Terlambat";
+        }
+
+        submissions.push({
+          _id: new ObjectId(),
+
+          assignmentId: assignment._id,
+
+          studentId: enr.studentId,
+
+          file:
+            status === "Belum Mengumpulkan"
+              ? null
+              : `submission_${enr.studentId}.pdf`,
+
+          tanggalSubmit:
+            status === "Belum Mengumpulkan"
+              ? null
+              : faker.date.recent({ days: 15 }),
+
+          status,
+
+          createdAt: new Date(),
+        });
+      }
+    }
+
+    await db
+      .collection("submissions")
+      .insertMany(submissions);
+
+    // =========================
+    // GRADES
+    // =========================
+
+    const grades = [];
+
+    for (const enr of enrollments) {
+      const kelas = classes.find(
+        (c) =>
+          c._id.toString() ===
+          enr.classId.toString()
+      );
+
+      const allowedSubjects =
+        subjectDocs.filter((s) => {
+          if (s.jurusan === "Semua") {
+            return true;
+          }
+
+          return s.jurusan === kelas.jurusan;
+        });
+
+      for (const subject of allowedSubjects) {
+        const nilai = randomBetween(65, 100);
+
+        const cs = classSubjects.find(
+          (x) =>
+            x.classId.toString() ===
+            kelas._id.toString() &&
+            x.subjectId.toString() ===
+            subject._id.toString()
+        );
+
+        grades.push({
+          _id: new ObjectId(),
+
+          studentId: enr.studentId,
+
+          subjectId: subject._id,
+
+          classId: kelas._id,
+
+          nilai,
+
+          grade: getGrade(nilai),
+
+          teacherId: cs.guruPengajar,
+
+          createdAt: new Date(),
+        });
+      }
+    }
+
+    await db
+      .collection("grades")
+      .insertMany(grades);
+
+    console.log(
+      "Grades:",
+      grades.length
     );
 
-    grades.push({
-      _id: new ObjectId(),
+    console.log(
+      "Submissions:",
+      submissions.length
+    );
 
-      studentId: enr.studentId,
+    console.log(
+      "Assignments:",
+      assignments.length
+    );
 
-      subjectId: subject._id,
-
-      classId: kelas._id,
-
-      nilai,
-
-      grade: getGrade(nilai),
-
-      teacherId: cs.guruPengajar,
-
-      createdAt: new Date(),
-    });
-  }
-}
-
-await db
-  .collection("grades")
-  .insertMany(grades);
-
-console.log(
-  "Grades:",
-  grades.length
-);
-
-console.log(
-  "Submissions:",
-  submissions.length
-);
-
-console.log(
-  "Assignments:",
-  assignments.length
-);
-
-console.log(
-  "Class Subjects:",
-  classSubjects.length
-);
+    console.log(
+      "Class Subjects:",
+      classSubjects.length
+    );
 
     console.log("Enrollments:", enrollments.length);
 

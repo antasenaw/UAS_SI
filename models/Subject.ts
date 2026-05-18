@@ -1,27 +1,36 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface ISubject extends Document {
-  name: string;
-  created_at: Date;
-  updated_at: Date;
+  namaMataPelajaran: string;
+  kode: string;
+  kategori: 'Umum' | 'Peminatan';
+  jurusan: string;
+  deskripsi: string;
+  status: 'Aktif' | 'Nonaktif';
+  pengampu?: any;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const SubjectSchema = new Schema<ISubject>(
   {
-    name: {
-      type: String,
-      required: [true, 'Nama mapel wajib diisi'],
-      unique: true,
-      trim: true,
-      maxlength: [50, 'Nama mapel maksimal 50 karakter']
-    }
-  },
-  {
-    timestamps: {
-      createdAt: 'created_at',
-      updatedAt: 'updated_at',
+    namaMataPelajaran: { type: String, required: true, trim: true },
+    kode: { type: String, required: true, unique: true, trim: true },
+    kategori: { type: String, enum: ['Umum', 'Peminatan'], default: 'Umum' },
+    jurusan: { type: String, required: true },
+    deskripsi: { type: String, trim: true },
+    status: { type: String, enum: ['Aktif', 'Nonaktif'], default: 'Aktif' },
+    pengampu: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User"
     },
-  }
+  },
+  { timestamps: true }
 );
 
-export default mongoose.models.Subject || mongoose.model<ISubject>('Subject', SubjectSchema);
+// Force refresh model schema to apply changes like 'pengampu' field
+if (mongoose.models.Subject) {
+  delete (mongoose.models as any).Subject;
+}
+
+export default mongoose.model<ISubject>('Subject', SubjectSchema);

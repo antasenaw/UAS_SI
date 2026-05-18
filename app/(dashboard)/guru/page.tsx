@@ -1,7 +1,7 @@
 'use client'
 
 import GuruProfileCard from '@/components/guruProfileCard'
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useSearch } from '@/app/providers'
 import { currentGuruProfile } from '@/lib/user/mockProfile'
 import { BookOpen, Users, TrendingUp, AlertCircle } from 'lucide-react'
@@ -21,92 +21,51 @@ interface SiswaAnalisa {
   status: 'baik' | 'cukup' | 'kurang'
 }
 
-const kelasList: KelasSummary[] = [
-  {
-    id: '1',
-    nama: 'XII MIPA 1',
-    jumlahSiswa: 32,
-    topikTerbaru: 'Materi Termodinamika - 28 Februari 2026',
-  },
-  {
-    id: '2',
-    nama: 'XII MIPA 2',
-    jumlahSiswa: 30,
-    topikTerbaru: 'Soal Latihan Usaha dan Energi - 27 Februari 2026',
-  },
-  {
-    id: '3',
-    nama: 'XII MIPA 3',
-    jumlahSiswa: 31,
-    topikTerbaru: 'Quiz Mekanika - 26 Februari 2026',
-  },
-  {
-    id: '4',
-    nama: 'XII MIPA 4',
-    jumlahSiswa: 29,
-    topikTerbaru: 'Tugas Kelompok Gelombang - 25 Februari 2026',
-  },
-]
-
-const siswaAnalisa: SiswaAnalisa[] = [
-  {
-    id: '1',
-    nama: 'Ahmad Rizki Pratama',
-    kelas: 'XII MIPA 4',
-    rataRataNilai: 85,
-    status: 'baik',
-  },
-  {
-    id: '2',
-    nama: 'Siti Rahayu Nurdin',
-    kelas: 'XII MIPA 4',
-    rataRataNilai: 78,
-    status: 'cukup',
-  },
-  {
-    id: '3',
-    nama: 'Muhammad Fajar Rizky',
-    kelas: 'XII MIPA 4',
-    rataRataNilai: 65,
-    status: 'kurang',
-  },
-  {
-    id: '4',
-    nama: 'Dewi Kusuma Wardhani',
-    kelas: 'XII MIPA 4',
-    rataRataNilai: 92,
-    status: 'baik',
-  },
-  {
-    id: '5',
-    nama: 'Eka Putra Wijaya',
-    kelas: 'XII MIPA 4',
-    rataRataNilai: 55,
-    status: 'kurang',
-  },
-]
-
 export default function GuruBeranda() {
+  const [dashboardData, setDashboardData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
   const { searchQuery } = useSearch()
   const normalizedSearch = searchQuery.toLowerCase().trim()
   const searchActive = normalizedSearch.length > 0
 
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      try {
+        const token = localStorage.getItem("authToken")
+        const res = await fetch("/api/guru/dashboard", {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        })
+        const data = await res.json()
+        if (data.success) {
+          setDashboardData(data)
+        }
+      } catch (err) {
+        console.error(err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchDashboard()
+  }, [])
+
   const kelasToShow = useMemo(
     () =>
-      kelasList.filter((kelas) =>
+      (dashboardData?.classes || []).filter((kelas: any) =>
         [kelas.nama, kelas.topikTerbaru]
           .some((value) => value.toLowerCase().includes(normalizedSearch))
       ),
-    [normalizedSearch]
+    [normalizedSearch, dashboardData]
   )
 
   const siswaToShow = useMemo(
     () =>
-      siswaAnalisa.filter((siswa) =>
+      (dashboardData?.siswaAnalisa || []).filter((siswa: any) =>
         [siswa.nama, siswa.kelas, siswa.status]
           .some((value) => value.toString().toLowerCase().includes(normalizedSearch))
       ),
-    [normalizedSearch]
+    [normalizedSearch, dashboardData]
   )
 
   const getStatusColor = (status: string) => {
@@ -122,10 +81,20 @@ export default function GuruBeranda() {
     }
   }
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
+
+  const guruProfile = dashboardData?.profile
+
   return (
-    <div className="p-8">
+    <div className="p-8 bg-gray-50 min-h-screen">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-black mb-2">Selamat Datang, {currentGuruProfile.name}</h1>
+        <h1 className="text-3xl font-bold text-black mb-2">Selamat Datang, {guruProfile?.name}</h1>
         <p className="text-gray-600">
           {searchActive ? `Hasil pencarian untuk "${searchQuery}"` : 'Kelola kelas dan pantau perkembangan siswa Anda'}
         </p>
@@ -135,10 +104,10 @@ export default function GuruBeranda() {
         {/* Right Column - Profile Card */}
         <div className="col-span-1">
           <GuruProfileCard
-            nama={currentGuruProfile.name}
-            nip={currentGuruProfile.nip}
-            kelasWali="XII MIPA 4"
-            mataPelajaran={[currentGuruProfile.bidangStudi]}
+            nama={guruProfile?.name}
+            nip={guruProfile?.nip}
+            kelasWali={dashboardData?.waliKelasClassName || "-"}
+            mataPelajaran={[guruProfile?.bidangStudi]}
           />
         </div>
 
@@ -150,7 +119,7 @@ export default function GuruBeranda() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-600 text-sm font-medium">Total Kelas</p>
-                  <p className="text-3xl font-bold text-black mt-2">4</p>
+                  <p className="text-3xl font-bold text-black mt-2">{dashboardData?.stats?.totalKelas}</p>
                 </div>
                 <BookOpen size={40} className="text-blue-100" />
               </div>
@@ -159,7 +128,7 @@ export default function GuruBeranda() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-600 text-sm font-medium">Total Siswa</p>
-                  <p className="text-3xl font-bold text-black mt-2">122</p>
+                  <p className="text-3xl font-bold text-black mt-2">{dashboardData?.stats?.totalSiswa}</p>
                 </div>
                 <Users size={40} className="text-blue-100" />
               </div>
@@ -168,7 +137,7 @@ export default function GuruBeranda() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-600 text-sm font-medium">Rata-rata Nilai</p>
-                  <p className="text-3xl font-bold text-black mt-2">76.5</p>
+                  <p className="text-3xl font-bold text-black mt-2">{dashboardData?.stats?.rataRataNilai}</p>
                 </div>
                 <TrendingUp size={40} className="text-blue-100" />
               </div>
@@ -205,7 +174,7 @@ export default function GuruBeranda() {
           {/* Analisa Siswa Wali Kelas */}
           <div className="bg-white rounded-lg shadow-md p-6">
             <h2 className="text-xl font-semibold text-black mb-4">
-              Analisa Siswa Kelas Wali (XII MIPA 4)
+              Analisa Siswa Kelas Wali ({dashboardData?.waliKelasClassName || "Bukan Wali Kelas"})
             </h2>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
