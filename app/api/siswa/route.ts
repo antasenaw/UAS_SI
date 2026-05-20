@@ -39,15 +39,16 @@ export async function GET(request: NextRequest) {
     const kelas = await ClassModel.findById(enrollment.classId);
     const waliKelas = await User.findById(kelas?.waliKelas);
 
-    const classSubjects = await ClassSubject.find({ classId: enrollment.classId });
+    const classSubjects = await ClassSubject.find({ classId: enrollment.classId }).populate('guruPengajar', 'name');
     const subjectIds = classSubjects.map((cs) => cs.subjectId);
     const subjects = await Subject.find({ _id: { $in: subjectIds } });
 
     const assignments = await Assignment.find({ classId: enrollment.classId })
+      .populate('mataPelajaran', 'namaMataPelajaran')
       .sort({ deadline: 1 })
       .limit(5);
 
-    const grades = await Grade.find({ studentId: siswa._id });
+    const grades = await Grade.find({ studentId: siswa._id }).populate('subjectId', 'namaMataPelajaran');
     const rataRata = grades.length > 0
         ? Math.round(grades.reduce((acc, item) => acc + item.nilai, 0) / grades.length)
         : 0;
@@ -66,15 +67,22 @@ export async function GET(request: NextRequest) {
         return {
           id: cs._id,
           nama: subject?.namaMataPelajaran || "-",
+          guru: (cs.guruPengajar as any)?.name || "-",
+          hari: cs.hari || "-",
           jam: `${cs.hari} ${cs.jamMulai} - ${cs.jamSelesai}`,
         };
       }),
-      assignments: assignments.map((a) => ({
-        id: a._id,
-        namaPekerjaan: a.judul,
-        deadline: a.deadline,
-        status: 'belum',
-      })),
+      assignments: assignments.map((a) => {
+        const cs = classSubjects.find(csItem => csItem.subjectId.toString() === a.mataPelajaran?._id.toString());
+        return {
+          id: a._id,
+          namaPekerjaan: a.judul,
+          deadline: a.deadline,
+          classSubjectId: cs?._id || "-",
+          mataKuliah: (a.mataPelajaran as any)?.namaMataPelajaran || "-",
+          status: 'belum',
+        };
+      }),
       grades,
       rataRata,
       chartData: {

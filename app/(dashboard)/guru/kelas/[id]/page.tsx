@@ -1,72 +1,100 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useParams } from 'next/navigation'
 import { ArrowLeft, Plus, FileText, BookOpen, X } from 'lucide-react'
 
-interface Materi {
+interface GuruInfo {
   id: string
-  judul: string
-  deskripsi: string
-  uploadedAt: string
-  file?: string
+  name: string
+  noInduk: string
 }
 
-interface Pekerjaan {
+interface SubjectInfo {
+  id: string
+  namaMataPelajaran: string
+}
+
+interface ClassDetail {
+  id: string
+  namaKelas: string
+  jurusan: string
+  angkatan: string
+  waliKelas: GuruInfo | null
+}
+
+interface StudentInfo {
+  id: string
+  name: string
+  noInduk: string
+}
+
+interface ScheduleItem {
+  id: string
+  subject: SubjectInfo | null
+  guruPengajar: GuruInfo | null
+  hari: string
+  jamMulai: string
+  jamSelesai: string
+  ruangKelas: string
+}
+
+interface TaskInfo {
   id: string
   judul: string
   deskripsi: string
   deadline: string
-  uploadedAt: string
+  mataPelajaran: SubjectInfo | null
+  guru: GuruInfo | null
 }
 
-const materiList: Materi[] = [
-  {
-    id: '1',
-    judul: 'Pengenalan Termodinamika',
-    deskripsi: 'Konsep dasar hukum pertama dan kedua termodinamika',
-    uploadedAt: '28 Februari 2026',
-    file: 'Termodinamika_Dasar.pdf',
-  },
-  {
-    id: '2',
-    judul: 'Usaha dan Energi',
-    deskripsi: 'Pembahasan lengkap tentang konsep usaha dan energi kinetik',
-    uploadedAt: '25 Februari 2026',
-    file: 'Usaha_dan_Energi.pdf',
-  },
-  {
-    id: '3',
-    judul: 'Gerak Melingkar Beraturan',
-    deskripsi: 'Analisis gerak melingkar dan gaya sentripetal',
-    uploadedAt: '20 Februari 2026',
-    file: 'GMB.pdf',
-  },
-]
-
-const pekerjaanList: Pekerjaan[] = [
-  {
-    id: '1',
-    judul: 'Soal Latihan Termodinamika',
-    deskripsi: 'Kerjakan soal-soal pilihan ganda dan essay tentang termodinamika',
-    deadline: '5 Maret 2026',
-    uploadedAt: '28 Februari 2026',
-  },
-  {
-    id: '2',
-    judul: 'Tugas Kelompok Usaha dan Energi',
-    deskripsi: 'Buat presentasi tentang penerapan usaha dan energi dalam kehidupan sehari-hari',
-    deadline: '10 Maret 2026',
-    uploadedAt: '25 Februari 2026',
-  },
-]
+interface GuruKelasResponse {
+  kelas: ClassDetail | null
+  siswa: StudentInfo[]
+  jadwal: ScheduleItem[]
+  tugas: TaskInfo[]
+}
 
 export default function GuruKelasDetailPage() {
-  const kelasId = '1'
-  const kelasNama = 'XII MIPA 1'
+  const params = useParams()
+  const kelasId = params?.id
+  const [data, setData] = useState<GuruKelasResponse | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [showModal, setShowModal] = useState(false)
   const [modalType, setModalType] = useState<'materi' | 'pekerjaan'>('materi')
   const [formData, setFormData] = useState({ judul: '', deskripsi: '', file: null })
+
+  useEffect(() => {
+    if (!kelasId) return
+
+    const fetchKelasData = async () => {
+      setLoading(true)
+      setError(null)
+
+      try {
+        const response = await fetch(`/api/guru/kelas/${kelasId}`)
+        const result = await response.json()
+
+        if (!response.ok || !result.success) {
+          throw new Error(result.error || 'Gagal memuat data kelas')
+        }
+
+        setData(result.data)
+      } catch (err) {
+        if (err instanceof Error) {
+          setError(err.message)
+        } else {
+          setError('Terjadi kesalahan saat memuat data kelas')
+        }
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchKelasData()
+  }, [kelasId])
 
   const handleOpenModal = (type: 'materi' | 'pekerjaan') => {
     setModalType(type)
@@ -75,14 +103,36 @@ export default function GuruKelasDetailPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    // Handle form submission
     setShowModal(false)
     setFormData({ judul: '', deskripsi: '', file: null })
   }
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 bg-gray-50 min-h-screen">
+        <div className="max-w-xl mx-auto bg-white rounded-xl shadow-md border border-red-100 p-8">
+          <h1 className="text-2xl font-bold text-red-700 mb-4">Gagal memuat kelas</h1>
+          <p className="text-gray-700 mb-4">{error}</p>
+          <Link href="/guru/kelas" className="text-blue-600 hover:underline">
+            Kembali ke daftar kelas
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  const kelasNama = data?.kelas?.namaKelas ?? 'Detail Kelas'
+
   return (
     <div className="p-8">
-      {/* Header */}
       <div className="mb-8">
         <Link
           href="/guru/kelas"
@@ -92,90 +142,134 @@ export default function GuruKelasDetailPage() {
           Kembali ke Daftar Kelas
         </Link>
         <h1 className="text-3xl font-bold text-black">{kelasNama}</h1>
-        <p className="text-gray-600 mt-1">Kelola materi dan pekerjaan kelas</p>
+        <p className="text-gray-600 mt-1">Kelola materi, jadwal, dan tugas kelas</p>
       </div>
 
-      {/* Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Materi Column */}
         <div className="lg:col-span-1">
-          <h2 className="text-xl font-semibold text-black mb-4">Materi Pelajaran</h2>
+          <h2 className="text-xl font-semibold text-black mb-4">Jadwal Pelajaran</h2>
           <div className="space-y-3">
-            {materiList.map((materi) => (
-              <div
-                key={materi.id}
-                className="p-4 bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-start gap-3 mb-2">
-                  <BookOpen size={20} className="text-green-500 shrink-0" />
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-black text-sm">{materi.judul}</h3>
-                    <p className="text-xs text-gray-500 mt-1">{materi.uploadedAt}</p>
+            {data?.jadwal.length ? (
+              data.jadwal.map((item) => (
+                <div
+                  key={item.id}
+                  className="p-4 bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow"
+                >
+                  <div className="flex items-start gap-3 mb-2">
+                    <BookOpen size={20} className="text-green-500 shrink-0" />
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-black text-sm">
+                        {item.subject?.namaMataPelajaran ?? 'Mata pelajaran tidak tersedia'}
+                      </h3>
+                      <p className="text-xs text-gray-500 mt-1">{item.hari} • {item.jamMulai} - {item.jamSelesai}</p>
+                    </div>
                   </div>
+                  <p className="text-xs text-gray-600 mb-2">Ruang: {item.ruangKelas || '-'}</p>
+                  <p className="text-xs font-medium text-gray-700">
+                    Guru: {item.guruPengajar?.name ?? '-'}
+                  </p>
                 </div>
-                <p className="text-xs text-gray-600 mb-2">{materi.deskripsi}</p>
-                {materi.file && (
-                  <div className="text-xs text-blue-600 font-medium cursor-pointer hover:underline">
-                    📄 {materi.file}
-                  </div>
-                )}
+              ))
+            ) : (
+              <div className="p-6 bg-white rounded-lg border border-gray-200 text-center text-gray-600">
+                Jadwal pelajaran belum tersedia untuk kelas ini.
               </div>
-            ))}
+            )}
           </div>
         </div>
 
-        {/* Pekerjaan Column */}
         <div className="lg:col-span-1">
           <h2 className="text-xl font-semibold text-black mb-4">Pekerjaan / Tugas</h2>
           <div className="space-y-3">
-            {pekerjaanList.map((pekerjaan) => (
-              <Link
-                key={pekerjaan.id}
-                href={`/guru/kelas/${kelasId}/pekerjaan/${pekerjaan.id}`}
-                className="p-4 bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow block cursor-pointer"
-              >
-                <div className="flex items-start gap-3 mb-2">
-                  <FileText size={20} className="text-blue-500 shrink-0" />
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-black text-sm">{pekerjaan.judul}</h3>
-                    <p className="text-xs text-gray-500 mt-1">{pekerjaan.uploadedAt}</p>
+            {data?.tugas.length ? (
+              data.tugas.map((task) => (
+                <Link
+                  key={task.id}
+                  href={`/guru/kelas/${kelasId}/pekerjaan/${task.id}`}
+                  className="p-4 bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow block cursor-pointer"
+                >
+                  <div className="flex items-start gap-3 mb-2">
+                    <FileText size={20} className="text-blue-500 shrink-0" />
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-black text-sm">{task.judul}</h3>
+                      <p className="text-xs text-gray-500 mt-1">{task.mataPelajaran?.namaMataPelajaran ?? 'Mata pelajaran tidak tersedia'}</p>
+                    </div>
                   </div>
-                </div>
-                <p className="text-xs text-gray-600 mb-2">{pekerjaan.deskripsi}</p>
-                <div className="text-xs font-medium text-orange-600">
-                  📅 Deadline: {pekerjaan.deadline}
-                </div>
-              </Link>
-            ))}
+                  <p className="text-xs text-gray-600 mb-2">{task.deskripsi}</p>
+                  <div className="text-xs font-medium text-orange-600">📅 Deadline: {task.deadline}</div>
+                  <div className="text-xs text-gray-700 mt-2">Guru: {task.guru?.name ?? '-'}</div>
+                </Link>
+              ))
+            ) : (
+              <div className="p-6 bg-white rounded-lg border border-gray-200 text-center text-gray-600">
+                Belum ada tugas untuk kelas ini.
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Upload Section */}
         <div className="lg:col-span-1">
-          <h2 className="text-xl font-semibold text-black mb-4">Tambah Konten Baru</h2>
-          <div className="space-y-3">
-            <button
-              onClick={() => handleOpenModal('materi')}
-              className="w-full p-6 bg-white rounded-lg border-2 border-dashed border-green-300 hover:bg-green-50 transition-colors"
-            >
-              <Plus size={24} className="text-green-600 mx-auto mb-2" />
-              <p className="font-semibold text-green-700 text-sm">Upload Materi</p>
-              <p className="text-xs text-gray-600 mt-1">Tambah materi pelajaran baru</p>
-            </button>
+          <h2 className="text-xl font-semibold text-black mb-4">Info Kelas</h2>
+          <div className="space-y-4">
+            <div className="p-6 bg-white rounded-lg border border-gray-200">
+              <p className="text-sm text-gray-500">Jurusan</p>
+              <p className="text-lg font-semibold text-black">{data?.kelas?.jurusan ?? '-'}</p>
+            </div>
+            <div className="p-6 bg-white rounded-lg border border-gray-200">
+              <p className="text-sm text-gray-500">Angkatan</p>
+              <p className="text-lg font-semibold text-black">{data?.kelas?.angkatan ?? '-'}</p>
+            </div>
+            <div className="p-6 bg-white rounded-lg border border-gray-200">
+              <p className="text-sm text-gray-500">Wali Kelas</p>
+              <p className="text-lg font-semibold text-black">
+                {data?.kelas?.waliKelas?.name ?? 'Belum ditetapkan'}
+              </p>
+              <p className="text-sm text-gray-600">{data?.kelas?.waliKelas?.noInduk ?? '-'}</p>
+            </div>
+          </div>
 
-            <button
-              onClick={() => handleOpenModal('pekerjaan')}
-              className="w-full p-6 bg-white rounded-lg border-2 border-dashed border-blue-300 hover:bg-blue-50 transition-colors"
-            >
-              <Plus size={24} className="text-blue-600 mx-auto mb-2" />
-              <p className="font-semibold text-blue-700 text-sm">Buat Pekerjaan</p>
-              <p className="text-xs text-gray-600 mt-1">Buat tugas / kuis baru</p>
-            </button>
+          <div className="mt-6 p-6 bg-white rounded-lg border border-gray-200">
+            <h3 className="font-semibold text-black mb-3">Total Siswa</h3>
+            <p className="text-4xl font-bold text-blue-600">{data?.siswa.length ?? 0}</p>
           </div>
         </div>
       </div>
 
-      {/* Modal */}
+      <div className="mt-10 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+          <h2 className="font-bold text-black">Daftar Siswa</h2>
+          <p className="text-sm text-gray-500">Nama dan NIS siswa yang terdaftar di kelas ini</p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b border-gray-100">
+              <tr>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase">Nama Siswa</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase">NIS</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data?.siswa.length ? (
+                data.siswa.map((student) => (
+                  <tr key={student.id} className="border-b border-gray-50 hover:bg-gray-50">
+                    <td className="px-6 py-4 font-medium text-black">{student.name}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{student.noInduk}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600">Aktif</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={3} className="px-6 py-16 text-center text-gray-500">
+                    Belum ada siswa terdaftar di kelas ini.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-lg max-w-md w-full mx-4 p-6">

@@ -22,7 +22,7 @@ const ClassSubjectSchema = new Schema<IClassSubject>(
     guruPengajar: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     ruangKelas: { type: String, required: true },
   },
-  { timestamps: true }
+  { timestamps: true, collection: 'class_subjects' }
 );
 
 export default mongoose.models.ClassSubject || mongoose.model<IClassSubject>('ClassSubject', ClassSubjectSchema);

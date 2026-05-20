@@ -1,13 +1,15 @@
 import connectDB from "@/lib/mongodb";
 import { NextRequest, NextResponse } from "next/server";
+import mongoose from 'mongoose';
 import User from "@/models/User";
 import ClassModel from "@/models/Class";
 import Subject from "@/models/Subject";
 import Grade from "@/models/Grade";
 import Enrollment from "@/models/Enrollment";
 import Period from "@/models/Period";
-import Submission from "@/models/Submission";
 import Assignment from "@/models/Assignment";
+import Submission from "@/models/Submission";
+
 
 export async function GET(request: NextRequest) {
   try {
@@ -30,7 +32,6 @@ export async function GET(request: NextRequest) {
     const distribution = await Promise.all(classes.map(async (c) => {
       const count = await Enrollment.countDocuments({ classId: c._id });
       
-      // Extensive fallback for labels
       const label = [
         c.namaKelas || c.section || '',
         c.angkatan || c.grade || '',
@@ -39,9 +40,7 @@ export async function GET(request: NextRequest) {
 
       return {
         kelas: label || `Kelas ${c._id.toString().substring(0, 5)}`,
-        jumlah: count > 0 ? count : Math.floor(Math.random() * 5) + 20 // If no enrollments, show some mock data for visualization if requested, but user said NO DUMMY. 
-        // Actually, if count is 0, show 0. But for "distribusi" maybe the user has data in another way?
-        // Given 'enrollments' only has 1 doc, I'll show actual count.
+        jumlah: count
       };
     }));
 
@@ -60,7 +59,7 @@ export async function GET(request: NextRequest) {
 
       const monthAvg = monthGrades.length > 0
         ? monthGrades.reduce((acc, curr) => acc + (curr.nilai || 0), 0) / monthGrades.length
-        : 75 + Math.floor(Math.random() * 10); // Subtle variation if no data for that month
+        : 0;
 
       progress.push({
         bulan: months[d.getMonth()],
@@ -72,6 +71,9 @@ export async function GET(request: NextRequest) {
     const activePeriod = await Period.findOne({ aktif: true });
 
     // 6. Real Recent Activities (Latest Submissions/Grades)
+    console.log('Registered mongoose models before dynamic import:', mongoose.modelNames());
+    await import('@/models/Assignment');
+    console.log('Registered mongoose models after dynamic import:', mongoose.modelNames());
     const latestSubmissions = await Submission.find()
       .sort({ createdAt: -1 })
       .limit(3)
@@ -115,8 +117,9 @@ export async function GET(request: NextRequest) {
       ]
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Dashboard API Error:", error);
-    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
+    const isDev = process.env.NODE_ENV !== 'production';
+    return NextResponse.json({ success: false, error: isDev ? (error.message || String(error)) : 'Internal server error' }, { status: 500 });
   }
 }

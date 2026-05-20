@@ -35,44 +35,68 @@ interface MataPelajaranScore {
   nilai: number
 }
 
-const dummyScoreData: ScoreData[] = [
-  { nama: 'Tugas 1', score: 85, deadline: 'Jan' },
-  { nama: 'Tugas 2', score: 90, deadline: 'Feb' },
-  { nama: 'Tugas 3', score: 78, deadline: 'Mar' },
-  { nama: 'Tugas 4', score: 92, deadline: 'Apr' },
-  { nama: 'Tugas 5', score: 88, deadline: 'May' },
-  { nama: 'Tugas 6', score: 95, deadline: 'Jun' },
-]
-
-const dummyAverageData: AverageData[] = [
-  { bulan: 'Jan', rataRata: 85 },
-  { bulan: 'Feb', rataRata: 87 },
-  { bulan: 'Mar', rataRata: 82 },
-  { bulan: 'Apr', rataRata: 89 },
-  { bulan: 'May', rataRata: 88 },
-  { bulan: 'Jun', rataRata: 91 },
-]
-
-const dummyMataPelajaranScore: MataPelajaranScore[] = [
-  { nama: 'Matematika', nilai: 88 },
-  { nama: 'Fisika', nilai: 85 },
-  { nama: 'Bahasa Indonesia', nilai: 92 },
-  { nama: 'Kimia', nilai: 80 },
-  { nama: 'Biologi', nilai: 87 },
-  { nama: 'Sejarah', nilai: 90 },
-]
+import { useState, useEffect } from 'react'
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
 
-function calculateAverageScore(data: ScoreData[]): number {
-  const total = data.reduce((sum, item) => sum + item.score, 0)
-  return Math.round(total / data.length)
-}
-
 export default function AnalisaPage() {
-  const averageScore = calculateAverageScore(dummyScoreData)
-  const maxScore = Math.max(...dummyScoreData.map((d) => d.score))
-  const minScore = Math.min(...dummyScoreData.map((d) => d.score))
+  const [scoreData, setScoreData] = useState<ScoreData[]>([])
+  const [averageData, setAverageData] = useState<AverageData[]>([])
+  const [mataPelajaranScore, setMataPelajaranScore] = useState<MataPelajaranScore[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const token = localStorage.getItem("authToken")
+        const res = await fetch("/api/siswa", {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        const data = await res.json()
+        if (data.success) {
+          const scores = (data.grades || []).map((g: any, idx: number) => ({
+            nama: g.subjectId?.namaMataPelajaran || `Tugas ${idx + 1}`,
+            score: g.nilai || 0,
+            deadline: new Date(g.createdAt).toLocaleDateString('id-ID', { month: 'short' })
+          }))
+          setScoreData(scores)
+          setAverageData(data.chartData?.averageData || [])
+
+          const subjectGrades: Record<string, { total: number; count: number }> = {}
+          for (const g of (data.grades || [])) {
+            const name = g.subjectId?.namaMataPelajaran || "Lainnya"
+            if (!subjectGrades[name]) {
+              subjectGrades[name] = { total: 0, count: 0 }
+            }
+            subjectGrades[name].total += (g.nilai || 0)
+            subjectGrades[name].count += 1
+          }
+          const mps = Object.entries(subjectGrades).map(([name, val]) => ({
+            nama: name,
+            nilai: Math.round(val.total / val.count)
+          }))
+          setMataPelajaranScore(mps)
+        }
+      } catch (err) {
+        console.error(err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
+
+  const averageScore = scoreData.length > 0 ? Math.round(scoreData.reduce((sum, item) => sum + item.score, 0) / scoreData.length) : 0
+  const maxScore = scoreData.length > 0 ? Math.max(...scoreData.map((d) => d.score)) : 0
+  const minScore = scoreData.length > 0 ? Math.min(...scoreData.map((d) => d.score)) : 0
 
   return (
     <div className="flex flex-col h-screen">
@@ -115,7 +139,7 @@ export default function AnalisaPage() {
             </div>
             <div className="bg-white rounded-lg shadow p-6">
               <h3 className="text-sm font-medium text-gray-600 mb-2">Total Pekerjaan</h3>
-              <p className="text-3xl font-bold text-purple-600">{dummyScoreData.length}</p>
+              <p className="text-3xl font-bold text-purple-600">{scoreData.length}</p>
               <p className="text-xs text-gray-500 mt-2">Sudah dikerjakan</p>
             </div>
           </div>
@@ -126,7 +150,7 @@ export default function AnalisaPage() {
             <div className="bg-white rounded-lg shadow p-6">
               <h3 className="text-lg font-semibold text-black mb-4">Score Pengumpulan Tugas</h3>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={dummyScoreData}>
+                <BarChart data={scoreData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="deadline" />
                   <YAxis domain={[0, 100]} />
@@ -140,7 +164,7 @@ export default function AnalisaPage() {
             <div className="bg-white rounded-lg shadow p-6">
               <h3 className="text-lg font-semibold text-black mb-4">Rata-rata Nilai per Bulan</h3>
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={dummyAverageData}>
+                <LineChart data={averageData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="bulan" />
                   <YAxis domain={[0, 100]} />
@@ -163,7 +187,7 @@ export default function AnalisaPage() {
             <div className="bg-white rounded-lg shadow p-6">
               <h3 className="text-lg font-semibold text-black mb-4">Nilai per Mata Pelajaran</h3>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={dummyMataPelajaranScore}>
+                <BarChart data={mataPelajaranScore}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="nama" angle={-45} textAnchor="end" height={100} />
                   <YAxis domain={[0, 100]} />
@@ -179,16 +203,16 @@ export default function AnalisaPage() {
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie
-                    data={dummyMataPelajaranScore}
+                    data={mataPelajaranScore}
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={({ nama, nilai }) => `${nama}: ${nilai}`}
+                    label={({ nama, nilai }: any) => `${nama}: ${nilai}`}
                     outerRadius={80}
                     fill="#8884d8"
                     dataKey="nilai"
                   >
-                    {dummyMataPelajaranScore.map((entry, index) => (
+                    {mataPelajaranScore.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
@@ -213,7 +237,7 @@ export default function AnalisaPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {dummyScoreData.map((item, index) => (
+                  {scoreData.map((item, index) => (
                     <tr key={index} className="hover:bg-gray-50">
                       <td className="px-6 py-4 text-sm text-gray-900">{item.nama}</td>
                       <td className="px-6 py-4 text-sm text-gray-600">{item.deadline}</td>

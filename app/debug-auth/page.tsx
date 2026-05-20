@@ -11,7 +11,7 @@ export default function DebugAuthPage() {
   useEffect(() => {
     setCookies(document.cookie)
     setLocalStorage(JSON.stringify({
-      authToken: localStorage.getItem('authToken')?.substring(0, 50) + '...' || 'NOT FOUND'
+      authToken: window.localStorage.getItem('authToken')?.substring(0, 50) + '...' || 'NOT FOUND'
     }))
   }, [])
 

@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useSearch } from "@/app/providers"
 import { Book } from "lucide-react"
@@ -12,16 +13,6 @@ interface MataPelajaran {
   jam: string
 }
 
-// Data semua mata pelajaran
-const allMataPelajaran: MataPelajaran[] = [
-  { id: '1', nama: 'Matematika', guru: 'Ibu Siti', hari: 'Senin', jam: '08:00-09:30' },
-  { id: '2', nama: 'Fisika', guru: 'Pak Ahmad', hari: 'Selasa', jam: '09:45-11:15' },
-  { id: '3', nama: 'Bahasa Indonesia', guru: 'Ibu Rina', hari: 'Rabu', jam: '13:00-14:30' },
-  { id: '4', nama: 'Kimia', guru: 'Pak Budi', hari: 'Kamis', jam: '10:00-11:30' },
-  { id: '5', nama: 'Biologi', guru: 'Ibu Maya', hari: 'Jumat', jam: '11:45-13:15' },
-  { id: '6', nama: 'Sejarah', guru: 'Pak Doni', hari: 'Sabtu', jam: '14:30-16:00' },
-]
-
 const colorVariants = [
   'bg-red-400',
   'bg-blue-400',
@@ -32,17 +23,50 @@ const colorVariants = [
 ]
 
 export default function MapelPage() {
+  const [subjects, setSubjects] = useState<MataPelajaran[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchSubjects = async () => {
+      try {
+        const token = localStorage.getItem("authToken")
+        const res = await fetch("/api/siswa", {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        })
+        const data = await res.json()
+        if (data.success) {
+          setSubjects(data.subjects || [])
+        }
+      } catch (err) {
+        console.error(err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchSubjects()
+  }, [])
+
   const { searchQuery } = useSearch()
   const normalizedSearch = searchQuery.trim().toLowerCase()
   const searchActive = normalizedSearch.length > 0
 
-  const filteredMataPelajaran = allMataPelajaran.filter((mp) => {
+  const filteredMataPelajaran = subjects.filter((mp) => {
     return [mp.nama, mp.guru, mp.hari, mp.jam].some((value) =>
-      value.toLowerCase().includes(normalizedSearch)
+      value?.toLowerCase().includes(normalizedSearch)
     )
   })
 
-  const mataPelajaranToShow = searchActive ? filteredMataPelajaran : allMataPelajaran
+  const mataPelajaranToShow = searchActive ? filteredMataPelajaran : subjects
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col h-screen">

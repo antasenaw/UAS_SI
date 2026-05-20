@@ -3,7 +3,6 @@
 import GuruProfileCard from '@/components/guruProfileCard'
 import { useMemo, useState, useEffect } from 'react'
 import { useSearch } from '@/app/providers'
-import { currentGuruProfile } from '@/lib/user/mockProfile'
 import { BookOpen, Users, TrendingUp, AlertCircle } from 'lucide-react'
 
 interface KelasSummary {
@@ -24,6 +23,7 @@ interface SiswaAnalisa {
 export default function GuruBeranda() {
   const [dashboardData, setDashboardData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const { searchQuery } = useSearch()
   const normalizedSearch = searchQuery.toLowerCase().trim()
   const searchActive = normalizedSearch.length > 0
@@ -31,18 +31,28 @@ export default function GuruBeranda() {
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
-        const token = localStorage.getItem("authToken")
+        setError(null)
+        const token = typeof window !== 'undefined' ? localStorage.getItem("authToken") : null
+        const headers: any = {}
+        if (token) headers.Authorization = `Bearer ${token}`
+
         const res = await fetch("/api/guru/dashboard", {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
+          method: 'GET',
+          headers,
+          // ensure cookies are sent when auth token is stored in cookie
+          credentials: 'include'
         })
         const data = await res.json()
-        if (data.success) {
+        if (!res.ok || !data.success) {
+          setError(data.error || 'Gagal memuat data guru')
+          setDashboardData(null)
+        } else {
           setDashboardData(data)
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error(err)
+        setError(err?.message || 'Terjadi kesalahan saat memuat data')
+        setDashboardData(null)
       } finally {
         setLoading(false)
       }
@@ -89,6 +99,18 @@ export default function GuruBeranda() {
     )
   }
 
+  if (!dashboardData && error) {
+    return (
+      <div className="p-8 bg-gray-50 min-h-screen">
+        <div className="max-w-xl mx-auto bg-white rounded-xl shadow-md border border-red-100 p-8">
+          <h1 className="text-2xl font-bold text-red-700 mb-4">Data Guru tidak dapat dimuat</h1>
+          <p className="text-gray-700 mb-4">{error}</p>
+          <p className="text-sm text-gray-500">Periksa koneksi atau lakukan login ulang.</p>
+        </div>
+      </div>
+    )
+  }
+
   const guruProfile = dashboardData?.profile
 
   return (
@@ -107,7 +129,7 @@ export default function GuruBeranda() {
             nama={guruProfile?.name}
             nip={guruProfile?.nip}
             kelasWali={dashboardData?.waliKelasClassName || "-"}
-            mataPelajaran={[guruProfile?.bidangStudi]}
+            mataPelajaran={guruProfile?.mataPelajaran || []}
           />
         </div>
 
@@ -119,7 +141,7 @@ export default function GuruBeranda() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-600 text-sm font-medium">Total Kelas</p>
-                  <p className="text-3xl font-bold text-black mt-2">{dashboardData?.stats?.totalKelas}</p>
+                  <p className="text-3xl font-bold text-black mt-2">{dashboardData?.stats?.totalKelas ?? '-'}</p>
                 </div>
                 <BookOpen size={40} className="text-blue-100" />
               </div>
@@ -128,7 +150,7 @@ export default function GuruBeranda() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-600 text-sm font-medium">Total Siswa</p>
-                  <p className="text-3xl font-bold text-black mt-2">{dashboardData?.stats?.totalSiswa}</p>
+                  <p className="text-3xl font-bold text-black mt-2">{dashboardData?.stats?.totalSiswa ?? '-'}</p>
                 </div>
                 <Users size={40} className="text-blue-100" />
               </div>
@@ -137,7 +159,7 @@ export default function GuruBeranda() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-600 text-sm font-medium">Rata-rata Nilai</p>
-                  <p className="text-3xl font-bold text-black mt-2">{dashboardData?.stats?.rataRataNilai}</p>
+                  <p className="text-3xl font-bold text-black mt-2">{dashboardData?.stats?.rataRataNilai ?? '-'}</p>
                 </div>
                 <TrendingUp size={40} className="text-blue-100" />
               </div>
@@ -149,13 +171,16 @@ export default function GuruBeranda() {
             <h2 className="text-xl font-semibold text-black mb-4">Kelas yang Anda Ajar</h2>
             <div className="grid grid-cols-2 gap-4">
               {kelasToShow.length > 0 ? (
-                kelasToShow.map((kelas) => (
+                kelasToShow.map((kelas: any) => (
                   <div
                     key={kelas.id}
                     className="p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow cursor-pointer"
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-semibold text-black">{kelas.nama}</h3>
+                      <div>
+                        <h3 className="font-semibold text-black">{kelas.nama}</h3>
+                        <p className="text-xs text-gray-500 mt-1">{kelas.mataPelajaran}</p>
+                      </div>
                       <span className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">
                         {kelas.jumlahSiswa} siswa
                       </span>
@@ -187,7 +212,7 @@ export default function GuruBeranda() {
                 </thead>
                 <tbody>
                   {siswaToShow.length > 0 ? (
-                  siswaToShow.map((siswa) => (
+                  siswaToShow.map((siswa: any) => (
                     <tr key={siswa.id} className="border-b border-gray-100 hover:bg-gray-50">
                       <td className="py-3 font-medium text-black">{siswa.nama}</td>
                       <td className="py-3 text-center">

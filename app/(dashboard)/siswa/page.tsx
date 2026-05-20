@@ -20,7 +20,7 @@ interface Tugas {
   id: string
   namaPekerjaan: string
   deadline: Date
-  mataKuliahId: string
+  classSubjectId: string
   mataKuliah: string
   status: 'belum' | 'proses' | 'selesai'
 }
@@ -274,7 +274,7 @@ export default function SiswaDashboard() {
                 tugasToShow.map((pekerjaan: Tugas) => (
                   <Link
                     key={pekerjaan.id}
-                    href="/siswa/mapel/tugas"
+                    href={`/siswa/mapel/${pekerjaan.classSubjectId}/pekerjaan/${pekerjaan.id}`}
                     className="bg-gray-50 p-3 rounded border border-gray-200 hover:shadow-sm hover:border-blue-300 transition-all"
                   >
                     <h4 className="text-xs font-semibold text-gray-900 mb-1 line-clamp-2">{pekerjaan.namaPekerjaan}</h4>

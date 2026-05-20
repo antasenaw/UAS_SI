@@ -1,13 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import Topbar from '@/components/topbar'
 import { ArrowLeft, BookOpen, FileText } from 'lucide-react'
 
 interface MataPelajaran {
-  id: string
   nama: string
   guru: string
   hari: string
@@ -15,73 +14,19 @@ interface MataPelajaran {
 }
 
 interface Materi {
-  id: string
+  _id: string
   judul: string
   deskripsi: string
-  tanggal: string
+  tanggalUpload: string
 }
 
 interface Pekerjaan {
-  id: string
-  nama: string
+  _id: string
+  judul: string
   deskripsi: string
   deadline: string
-  status: 'belum' | 'sudah'
+  status: string
 }
-
-const allMataPelajaran: MataPelajaran[] = [
-  { id: '1', nama: 'Matematika', guru: 'Ibu Siti', hari: 'Senin', jam: '08:00-09:30' },
-  { id: '2', nama: 'Fisika', guru: 'Pak Ahmad', hari: 'Selasa', jam: '09:45-11:15' },
-  { id: '3', nama: 'Bahasa Indonesia', guru: 'Ibu Rina', hari: 'Rabu', jam: '13:00-14:30' },
-  { id: '4', nama: 'Kimia', guru: 'Pak Budi', hari: 'Kamis', jam: '10:00-11:30' },
-  { id: '5', nama: 'Biologi', guru: 'Ibu Maya', hari: 'Jumat', jam: '11:45-13:15' },
-  { id: '6', nama: 'Sejarah', guru: 'Pak Doni', hari: 'Sabtu', jam: '14:30-16:00' },
-]
-
-const dummyMateri: Materi[] = [
-  {
-    id: '1',
-    judul: 'Bab 1: Konsep Dasar',
-    deskripsi: 'Pengenalan konsep fundamental yang akan kita pelajari',
-    tanggal: '2024-02-28',
-  },
-  {
-    id: '2',
-    judul: 'Bab 2: Aplikasi Praktis',
-    deskripsi: 'Aplikasi konsep dalam kehidupan sehari-hari',
-    tanggal: '2024-02-27',
-  },
-  {
-    id: '3',
-    judul: 'Catatan Tambahan',
-    deskripsi: 'Referensi dan sumber belajar tambahan',
-    tanggal: '2024-02-26',
-  },
-]
-
-const dummyPekerjaan: Pekerjaan[] = [
-  {
-    id: '1',
-    nama: 'Soal Latihan Bab 1',
-    deskripsi: 'Kerjakan latihan soal halaman 10-15',
-    deadline: '2024-03-05',
-    status: 'belum',
-  },
-  {
-    id: '2',
-    nama: 'Essay Pemahaman Konsep',
-    deskripsi: 'Tulis essay tentang pemahaman Anda',
-    deadline: '2024-03-08',
-    status: 'belum',
-  },
-  {
-    id: '3',
-    nama: 'Quiz Online',
-    deskripsi: 'Uji pemahaman melalui quiz interaktif',
-    deadline: '2024-03-03',
-    status: 'sudah',
-  },
-]
 
 const colorVariants = [
   'bg-red-400',
@@ -96,10 +41,65 @@ export default function MapelDetailPage() {
   const params = useParams()
   const mapelId = params.id as string
   const [activeTab, setActiveTab] = useState<'materi' | 'pekerjaan'>('materi')
+  const [mapel, setMapel] = useState<MataPelajaran | null>(null)
+  const [materiList, setMateriList] = useState<Materi[]>([])
+  const [pekerjaanList, setPekerjaanList] = useState<Pekerjaan[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const mapel = allMataPelajaran.find((m) => m.id === mapelId)
-  const colorIndex = allMataPelajaran.findIndex((m) => m.id === mapelId)
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const token = localStorage.getItem("authToken")
+        const resCS = await fetch(`/api/class-subject?id=${mapelId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        const dataCS = await resCS.json()
+        if (dataCS.success && dataCS.data && dataCS.data.length > 0) {
+          const cs = dataCS.data[0]
+          setMapel({
+            nama: cs.subjectId?.namaMataPelajaran || "-",
+            guru: cs.guruPengajar?.name || "-",
+            hari: cs.hari || "-",
+            jam: `${cs.hari || ""} ${cs.jamMulai || ""} - ${cs.jamSelesai || ""}`
+          })
+
+          const resM = await fetch(`/api/material?subjectId=${cs.subjectId?._id}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+          const dataM = await resM.json()
+          if (dataM.success) {
+            setMateriList(dataM.data || [])
+          }
+
+          const resA = await fetch(`/api/assignment?subjectId=${cs.subjectId?._id}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+          const dataA = await resA.json()
+          if (dataA.success) {
+            setPekerjaanList(dataA.data || [])
+          }
+        }
+      } catch (err) {
+        console.error(err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    if (mapelId) {
+      fetchData()
+    }
+  }, [mapelId])
+
+  const colorIndex = typeof mapelId === 'string' ? mapelId.charCodeAt(0) : 0
   const bgColor = colorVariants[colorIndex % colorVariants.length]
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
 
   if (!mapel) {
     return <div className="text-center py-16">Mata pelajaran tidak ditemukan</div>
@@ -164,11 +164,11 @@ export default function MapelDetailPage() {
             {/* Materi Tab */}
             {activeTab === 'materi' && (
               <div className="divide-y">
-                {dummyMateri.length > 0 ? (
-                  dummyMateri.map((materi) => (
+                {materiList.length > 0 ? (
+                  materiList.map((materi) => (
                     <Link
-                      key={materi.id}
-                      href={`/siswa/mapel/${mapelId}/materi/${materi.id}`}
+                      key={materi._id}
+                      href={`/siswa/mapel/${mapelId}/materi/${materi._id}`}
                       className="p-6 hover:bg-gray-50 transition-colors flex items-start gap-4 group"
                     >
                       <BookOpen className="text-blue-500 flex-shrink-0 mt-1 group-hover:text-blue-600" size={24} />
@@ -176,7 +176,7 @@ export default function MapelDetailPage() {
                         <h3 className="font-semibold text-black text-lg mb-2 group-hover:text-blue-600 transition-colors">{materi.judul}</h3>
                         <p className="text-gray-600 text-sm mb-3">{materi.deskripsi}</p>
                         <p className="text-xs text-gray-500">
-                          Diupload: {new Date(materi.tanggal).toLocaleDateString('id-ID')}
+                          Diupload: {new Date(materi.tanggalUpload).toLocaleDateString('id-ID')}
                         </p>
                       </div>
                     </Link>
@@ -193,16 +193,16 @@ export default function MapelDetailPage() {
             {/* Pekerjaan Tab */}
             {activeTab === 'pekerjaan' && (
               <div className="divide-y">
-                {dummyPekerjaan.length > 0 ? (
-                  dummyPekerjaan.map((pekerjaan) => (
+                {pekerjaanList.length > 0 ? (
+                  pekerjaanList.map((pekerjaan) => (
                     <Link
-                      key={pekerjaan.id}
-                      href={`/siswa/mapel/${mapelId}/pekerjaan/${pekerjaan.id}`}
+                      key={pekerjaan._id}
+                      href={`/siswa/mapel/${mapelId}/pekerjaan/${pekerjaan._id}`}
                       className="p-6 hover:bg-gray-50 transition-colors flex items-start gap-4 group"
                     >
                       <FileText className="text-purple-500 flex-shrink-0 mt-1 group-hover:text-purple-600" size={24} />
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-black text-lg mb-2 group-hover:text-blue-600 transition-colors">{pekerjaan.nama}</h3>
+                        <h3 className="font-semibold text-black text-lg mb-2 group-hover:text-blue-600 transition-colors">{pekerjaan.judul}</h3>
                         <p className="text-gray-600 text-sm mb-3">{pekerjaan.deskripsi}</p>
                         <p className="text-xs text-gray-500">
                           Deadline: {new Date(pekerjaan.deadline).toLocaleDateString('id-ID')}

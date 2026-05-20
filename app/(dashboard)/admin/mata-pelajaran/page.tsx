@@ -8,6 +8,7 @@ export default function AdminMataPelajaranPage() {
   const [subjects, setSubjects] = useState<any[]>([])
   const [classes, setClasses] = useState<any[]>([])
   const [teachers, setTeachers] = useState<any[]>([])
+  const [classSubjects, setClassSubjects] = useState<any[]>([])
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -27,20 +28,24 @@ export default function AdminMataPelajaranPage() {
     setLoading(true)
     setError(null)
     try {
-      const [resSub, resCla, resTea] = await Promise.all([
+      const [resSub, resCla, resTea, resClassSubjects] = await Promise.all([
         fetch('/api/subject'),
         fetch('/api/class'),
-        fetch('/api/user?role=Guru')
+        fetch('/api/user?role=Guru'),
+        fetch('/api/class-subject')
       ])
       const dataSub = await resSub.json()
       const dataCla = await resCla.json()
       const dataTea = await resTea.json()
+      const dataClassSubjects = await resClassSubjects.json()
       
       if (!dataSub.success) throw new Error(dataSub.error || 'Gagal memuat mata pelajaran')
+      if (!dataClassSubjects.success) throw new Error(dataClassSubjects.error || 'Gagal memuat penugasan kelas')
       
       setSubjects(dataSub.data)
       if (dataCla.success) setClasses(dataCla.data)
       if (dataTea.success) setTeachers(dataTea.data)
+      setClassSubjects(dataClassSubjects.data)
     } catch (err: any) {
       console.error(err)
       setError(err.message)
@@ -113,6 +118,7 @@ export default function AdminMataPelajaranPage() {
       })
       if (res.ok) {
         setShowAssignModal(false)
+        await fetchData()
         alert('Mata pelajaran berhasil ditugaskan ke kelas!')
       } else {
         const err = await res.json()
@@ -122,6 +128,21 @@ export default function AdminMataPelajaranPage() {
       console.error(err)
     } finally {
       setModalLoading(false)
+    }
+  }
+
+  const handleDeleteAssignment = async (id: string) => {
+    if (!confirm('Hapus penugasan mata pelajaran untuk kelas ini?')) return
+    try {
+      const res = await fetch(`/api/class-subject?id=${id}`, { method: 'DELETE' })
+      if (res.ok) {
+        await fetchData()
+      } else {
+        const err = await res.json()
+        alert(err.error)
+      }
+    } catch (err) {
+      console.error(err)
     }
   }
 
@@ -185,6 +206,46 @@ export default function AdminMataPelajaranPage() {
                   </td>
                 </tr>
               ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mt-8">
+        <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
+          <h2 className="font-bold text-black">Penugasan Mata Pelajaran per Kelas</h2>
+          <p className="text-sm text-gray-500">Setiap kelas dapat memiliki pengampu berbeda untuk mata pelajaran yang sama.</p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b border-gray-100">
+              <tr>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase">Kelas</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase">Mata Pelajaran</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase">Guru</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase">Hari / Jam</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase">Ruang</th>
+                <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              {classSubjects.map((cs) => (
+                <tr key={cs._id} className="border-b border-gray-50 hover:bg-gray-50">
+                  <td className="px-6 py-4 text-sm text-black">{`${cs.classId?.angkatan || '-'} ${cs.classId?.jurusan || ''} ${cs.classId?.namaKelas || ''}`.trim()}</td>
+                  <td className="px-6 py-4 text-sm text-black">{cs.subjectId?.namaMataPelajaran || '-'}</td>
+                  <td className="px-6 py-4 text-sm text-black">{cs.guruPengajar?.name || '-'}</td>
+                  <td className="px-6 py-4 text-sm text-black">{`${cs.hari || '-'} ${cs.jamMulai || ''}-${cs.jamSelesai || ''}`}</td>
+                  <td className="px-6 py-4 text-sm text-black">{cs.ruangKelas || '-'}</td>
+                  <td className="px-6 py-4 text-center">
+                    <button onClick={() => handleDeleteAssignment(cs._id)} className="px-3 py-1 bg-red-50 text-red-700 rounded-lg text-xs font-semibold hover:bg-red-100">Hapus</button>
+                  </td>
+                </tr>
+              ))}
+              {classSubjects.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">Belum ada penugasan kelas untuk mata pelajaran.</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

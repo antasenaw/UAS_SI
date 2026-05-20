@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useSearch } from '@/app/providers'
 import { FileText, ArrowLeft } from 'lucide-react'
@@ -13,54 +13,38 @@ interface Pekerjaan {
   deadline: string
 }
 
-const allPekerjaan: Pekerjaan[] = [
-  {
-    id: '1',
-    nama: 'Soal Latihan Bab 5',
-    mapelId: '1',
-    mataPelajaran: 'Matematika',
-    deadline: '2026-03-05',
-  },
-  {
-    id: '2',
-    nama: 'Essay Kebebasan Pers',
-    mapelId: '3',
-    mataPelajaran: 'Bahasa Indonesia',
-    deadline: '2026-03-01',
-  },
-  {
-    id: '3',
-    nama: 'Laporan Praktik Fisika',
-    mapelId: '2',
-    mataPelajaran: 'Fisika',
-    deadline: '2026-03-10',
-  },
-  {
-    id: '4',
-    nama: 'Ulangan Harian Kimia',
-    mapelId: '4',
-    mataPelajaran: 'Kimia',
-    deadline: '2026-02-28',
-  },
-  {
-    id: '5',
-    nama: 'Presentasi Biologi',
-    mapelId: '5',
-    mataPelajaran: 'Biologi',
-    deadline: '2026-03-12',
-  },
-  {
-    id: '6',
-    nama: 'Essay Analisis Sejarah',
-    mapelId: '6',
-    mataPelajaran: 'Sejarah',
-    deadline: '2026-02-27',
-  },
-]
-
 export default function PekerjaanPage() {
   const { searchQuery } = useSearch()
   const [sortBy, setSortBy] = useState<'deadline' | 'terbaru'>('deadline')
+  const [allPekerjaan, setAllPekerjaan] = useState<Pekerjaan[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchAssignments = async () => {
+      try {
+        const token = localStorage.getItem("authToken")
+        const res = await fetch("/api/assignment", {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        const data = await res.json()
+        if (data.success && data.data) {
+          const mapped = data.data.map((item: any) => ({
+            id: item._id,
+            nama: item.judul,
+            mapelId: item.mataPelajaran?._id || "-",
+            mataPelajaran: item.mataPelajaran?.namaMataPelajaran || "-",
+            deadline: item.deadline
+          }))
+          setAllPekerjaan(mapped)
+        }
+      } catch (err) {
+        console.error(err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchAssignments()
+  }, [])
 
   const normalizedSearch = searchQuery.trim().toLowerCase()
   const searchActive = normalizedSearch.length > 0
@@ -81,6 +65,14 @@ export default function PekerjaanPage() {
     }
     return 0
   })
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col h-screen">

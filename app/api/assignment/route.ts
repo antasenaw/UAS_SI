@@ -6,12 +6,22 @@ export async function GET(request: Request) {
   try {
     await connectDB();
     const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
     const classId = searchParams.get('classId');
     const teacherId = searchParams.get('teacherId');
+    const subjectId = searchParams.get('subjectId');
+
+    if (id) {
+      const assignment = await Assignment.findById(id)
+        .populate('mataPelajaran', 'namaMataPelajaran')
+        .populate('classId', 'namaKelas');
+      return NextResponse.json({ success: true, data: assignment ? [assignment] : [] });
+    }
 
     let query: any = {};
     if (classId) query.classId = classId;
     if (teacherId) query.teacherId = teacherId;
+    if (subjectId) query.mataPelajaran = subjectId;
 
     const assignments = await Assignment.find(query)
       .populate('mataPelajaran', 'namaMataPelajaran')

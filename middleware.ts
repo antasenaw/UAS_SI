@@ -1,15 +1,14 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import jwt from 'jsonwebtoken'
+import { jwtVerify } from 'jose'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
+const SECRET_KEY = new TextEncoder().encode(JWT_SECRET)
 
 // Routes that don't require authentication
 const publicRoutes = ['/login', '/reset', '/debug-auth']
 
-export const runtime = 'nodejs'
-
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   console.log("[Middleware] Path:", pathname);
 
@@ -19,26 +18,23 @@ export function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Check for auth token in cookies or headers
-  const allCookies = request.cookies.getAll();
-  console.log("[Middleware] All cookies count:", allCookies.length);
-  allCookies.forEach(cookie => {
-    console.log("[Middleware] Cookie:", cookie.name, "=", cookie.value?.substring(0, 20) + "...");
-  });
-  
-  const token = request.cookies.get('authToken')?.value
-  console.log("[Middleware] Token from cookies:", token ? "Found (" + token.length + " chars)" : "NOT FOUND");
+  // Check for auth token in cookies or Authorization header
+  const authHeader = request.headers.get('authorization')
+  const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : undefined
+  const token = request.cookies.get('authToken')?.value || bearerToken
+  console.log("[Middleware] Token from cookies:", request.cookies.get('authToken')?.value ? "Found" : "NOT FOUND")
+  console.log("[Middleware] Authorization header token:", bearerToken ? "Found" : "NOT FOUND")
 
   if (!token) {
     // Redirect to login if no token
-    console.log("[Middleware] No token, redirecting to /login");
+    console.log("[Middleware] No token, redirecting to /login")
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
   try {
     // Verify token
-    const decoded = jwt.verify(token, JWT_SECRET)
-    console.log("[Middleware] Token verified with payload:", decoded);
+    const { payload } = await jwtVerify(token, SECRET_KEY)
+    console.log("[Middleware] Token verified with payload:", payload);
     console.log("[Middleware] Token verified, allowing access");
     return NextResponse.next()
   } catch (error) {

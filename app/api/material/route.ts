@@ -6,8 +6,14 @@ export async function GET(request: Request) {
   try {
     await connectDB();
     const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
     const subjectId = searchParams.get('subjectId');
     const teacherId = searchParams.get('teacherId');
+
+    if (id) {
+      const material = await Material.findById(id).populate('mataPelajaran', 'namaMataPelajaran');
+      return NextResponse.json({ success: true, data: material ? [material] : [] });
+    }
 
     let query: any = {};
     if (subjectId) query.mataPelajaran = subjectId;

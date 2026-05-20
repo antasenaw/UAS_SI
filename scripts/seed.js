@@ -171,43 +171,113 @@ async function main() {
     // SUBJECTS
     // =========================
 
-    const subjectDocs = [];
+const subjectDocs = [];
 
-    const addSubject = (nama, kategori, jurusan, kode) => {
+const tingkatList = ['X', 'XI', 'XII'];
 
-      const guru =
-        guruList[randomBetween(0, guruList.length - 1)];
+function createSubject(
+  nama,
+  kategori,
+  jurusan,
+  tingkat
+) {
 
-      subjectDocs.push({
-        _id: new ObjectId(),
-        namaMataPelajaran: nama,
-        kode,
-        kategori,
+  const guru =
+    guruList[
+      subjectDocs.length % guruList.length
+    ];
+
+  const kode =
+    `${nama.substring(0, 3).toUpperCase()}-${tingkat}-${jurusan}`;
+
+  subjectDocs.push({
+    _id: new ObjectId(),
+
+    namaMataPelajaran: nama,
+
+    displayName:
+      `${nama} ${tingkat} ${jurusan}`,
+
+    kode,
+
+    kategori,
+
+    jurusan,
+
+    tingkat,
+
+    pengampu: guru._id,
+
+    deskripsi:
+      `${nama} untuk kelas ${tingkat} ${jurusan}`,
+
+    status: 'Aktif',
+
+    createdAt: new Date()
+  });
+}
+
+// ==================== MAPEL UMUM ====================
+
+for (const tingkat of tingkatList) {
+
+  for (const jurusan of ['IPA', 'IPS']) {
+
+    for (const subject of GENERAL_SUBJECTS) {
+
+      createSubject(
+        subject,
+        'Umum',
         jurusan,
-        deskripsi: `Mata pelajaran ${nama}`,
-        status: "Aktif",
-        pengampu: guru._id,
-        createdAt: new Date(),
-      });
-    };
+        tingkat
+      );
+    }
+  }
+}
 
-    GENERAL_SUBJECTS.forEach((s, i) => {
-      addSubject(s, "Umum", "Semua", `UMM${i + 1}`);
-    });
+// ==================== MAPEL IPA ====================
 
-    ["Biologi", "Fisika", "Kimia", "Matematika Peminatan"].forEach(
-      (s, i) => {
-        addSubject(s, "Peminatan", "IPA", `IPA${i + 1}`);
-      }
+for (const tingkat of tingkatList) {
+
+  for (const subject of [
+    'Biologi',
+    'Fisika',
+    'Kimia',
+    'Matematika Peminatan'
+  ]) {
+
+    createSubject(
+      subject,
+      'Peminatan',
+      'IPA',
+      tingkat
     );
+  }
+}
 
-    ["Ekonomi", "Sosiologi", "Sejarah Peminatan", "Geografi"].forEach(
-      (s, i) => {
-        addSubject(s, "Peminatan", "IPS", `IPS${i + 1}`);
-      }
+// ==================== MAPEL IPS ====================
+
+for (const tingkat of tingkatList) {
+
+  for (const subject of [
+    'Ekonomi',
+    'Sosiologi',
+    'Sejarah Peminatan',
+    'Geografi'
+  ]) {
+
+    createSubject(
+      subject,
+      'Peminatan',
+      'IPS',
+      tingkat
     );
+  }
+}
 
-    await db.collection("subjects").insertMany(subjectDocs);
+await db.collection('subjects').insertMany(subjectDocs);
+
+console.log('Subjects:', subjectDocs.length);
 
     // =========================
     // CLASSES
@@ -300,10 +370,16 @@ async function main() {
     let roomCounter = 1;
 
     for (const kelas of classes) {
-      const allowedSubjects = subjectDocs.filter((s) => {
-        if (s.jurusan === "Semua") return true;
-        return s.jurusan === kelas.jurusan;
-      });
+      const tingkatKelas =
+     kelas.namaKelas.split(' ')[0];
+
+    const allowedSubjects = subjectDocs.filter((s) => {
+
+      return (
+        s.jurusan === kelas.jurusan &&
+        s.tingkat === tingkatKelas
+      );
+    });
 
       let dayIndex = 0;
       let slotIndex = 0;
@@ -321,7 +397,7 @@ async function main() {
           _id: new ObjectId(),
           classId: kelas._id,
           subjectId: subject._id,
-          guruPengajar: teacherId,
+          guruPengajar: subject.pengampu,
           hari,
           jamMulai,
           jamSelesai,
@@ -376,7 +452,7 @@ async function main() {
 
           classId: cs.classId,
 
-          teacherId: cs.guruPengajar,
+          teacherId: subject.pengampu,
 
           deadline,
 
@@ -490,7 +566,7 @@ async function main() {
 
           grade: getGrade(nilai),
 
-          teacherId: cs.guruPengajar,
+          teacherId: subject.pengampu,
 
           createdAt: new Date(),
         });

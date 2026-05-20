@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import Topbar from '@/components/topbar'
 import { ArrowLeft, FileText, Download, Upload, X, CheckCircle, Clock, AlertCircle } from 'lucide-react'
 
@@ -20,111 +20,6 @@ interface Submission {
   status: 'tepat_waktu' | 'terlambat'
 }
 
-interface PekerjaanDetail {
-  id: string
-  nama: string
-  deskripsi: string
-  deadline: string
-  status: 'belum' | 'sudah'
-  file?: {
-    nama: string
-    ukuran: string
-    tipe: string
-    url: string
-  }[]
-  submission?: Submission
-}
-
-const allPekerjaanDetail: Record<string, PekerjaanDetail> = {
-  '1': {
-    id: '1',
-    nama: 'Soal Latihan Bab 1',
-    deskripsi: `Kerjakan latihan soal yang ada pada halaman 10-15 buku paket. Jawaban harus ditulis dengan jelas dan rapi.
-
-Perhatian:
-- Kerjakan semua soal yang tersedia
-- Tunjukkan cara/proses pengerjaan
-- Kumpulkan dalam format PDF atau foto yang jelas
-- Batas waktu pengumpulan: sesuai deadline`,
-    deadline: '2026-03-05',
-    status: 'belum',
-    file: [
-      { nama: 'Soal_Latihan_Bab1.pdf', ukuran: '1.2 MB', tipe: 'PDF', url: '#' },
-    ],
-    submission: {
-      id: '1',
-      file: [
-        { nama: 'Jawaban_Latihan_Bab1.pdf', ukuran: '2.3 MB', tipe: 'PDF', url: '#' },
-      ],
-      submittedAt: '2026-02-28T10:30:00',
-      status: 'tepat_waktu'
-    }
-  },
-  '2': {
-    id: '2',
-    nama: 'Essay Pemahaman Konsep',
-    deskripsi: `Tulislah essay dengan panjang minimal 500 kata tentang pemahaman Anda mengenai konsep-konsep yang telah dipelajari.
-
-Struktur essay:
-1. Pendahuluan (mengenalkan topik)
-2. Isi (penjelasan konsep dan pemahaman Anda)
-3. Kesimpulan (rangkuman pemahaman)
-
-Format:
-- Font: Arial, 12pt
-- Spasi: 1.5
-- Upload dalam format DOCX atau PDF`,
-    deadline: '2026-03-08',
-    status: 'belum',
-    submission: {
-      id: '2',
-      file: [
-        { nama: 'Essay_Konsep.docx', ukuran: '1.8 MB', tipe: 'DOCX', url: '#' },
-        { nama: 'Essay_Referensi.pdf', ukuran: '0.9 MB', tipe: 'PDF', url: '#' },
-      ],
-      submittedAt: '2026-03-01T15:45:00',
-      status: 'tepat_waktu'
-    }
-  },
-  '3': {
-    id: '3',
-    nama: 'Quiz Online',
-    deskripsi: `Ikuti quiz online yang telah disiapkan untuk menguji pemahaman Anda tentang materi yang telah diajarkan.
-
-Informasi Quiz:
-- Durasi: 30 menit
-- Jumlah soal: 20 pertanyaan
-- Jenis: Pilihan ganda
-- Nilai minimum: 70 untuk lulus`,
-    deadline: '2026-02-28',
-    status: 'sudah',
-    submission: {
-      id: '3',
-      file: [
-        { nama: 'Quiz_Submission.pdf', ukuran: '512 KB', tipe: 'PDF', url: '#' },
-      ],
-      submittedAt: '2026-02-27T14:20:00',
-      status: 'tepat_waktu'
-    }
-  },
-  '4': {
-    id: '4',
-    nama: 'Laporan Praktikum',
-    deskripsi: `Buatlah laporan lengkap tentang hasil praktikum yang telah dilakukan. Laporan harus mencakup tujuan, metodologi, hasil, analisis, dan kesimpulan.
-
-Format laporan:
-- Cover dengan judul yang jelas
-- Daftar isi
-- Penomoran halaman
-- Referensi`,
-    deadline: '2026-02-25',
-    status: 'belum',
-    file: [
-      { nama: 'Template_Laporan.docx', ukuran: '456 KB', tipe: 'DOCX', url: '#' },
-    ]
-  },
-}
-
 export default function PekerjaanDetailPage() {
   const params = useParams()
   const mapelId = params.id as string
@@ -134,8 +29,40 @@ export default function PekerjaanDetailPage() {
   const [submission, setSubmission] = useState<Submission | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [pekerjaan, setPekerjaan] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
-  const pekerjaan = allPekerjaanDetail[pekerjaaanId]
+  useEffect(() => {
+    const fetchAssignment = async () => {
+      try {
+        const token = localStorage.getItem("authToken")
+        const res = await fetch(`/api/assignment?id=${pekerjaaanId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        })
+        const data = await res.json()
+        if (data.success && data.data && data.data.length > 0) {
+          setPekerjaan(data.data[0])
+        }
+      } catch (err) {
+        console.error(err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    if (pekerjaaanId) {
+      fetchAssignment()
+    }
+  }, [pekerjaaanId])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
 
   if (!pekerjaan) {
     return <div className="text-center py-16">Pekerjaan tidak ditemukan</div>
@@ -207,7 +134,7 @@ export default function PekerjaanDetailPage() {
               Kembali
             </Link>
             <div>
-              <h1 className="text-3xl font-semibold text-black">{pekerjaan.nama}</h1>
+              <h1 className="text-3xl font-semibold text-black">{pekerjaan.judul || pekerjaan.nama}</h1>
               <p className="text-gray-600 text-sm mt-2 flex items-center gap-2">
                 <Clock size={16} />
                 Deadline: {deadlineDate.toLocaleDateString('id-ID', {
@@ -235,11 +162,11 @@ export default function PekerjaanDetailPage() {
               </div>
 
               {/* File Lampiran */}
-              {pekerjaan.file && pekerjaan.file.length > 0 && (
+              {pekerjaan.file && Array.isArray(pekerjaan.file) && pekerjaan.file.length > 0 && (
                 <div className="bg-white rounded-lg shadow-md p-8">
                   <h2 className="text-xl font-semibold text-black mb-6">File Lampiran Pekerjaan</h2>
                   <div className="space-y-3">
-                    {pekerjaan.file.map((file, index) => (
+                    {pekerjaan.file.map((file: any, index: number) => (
                       <div
                         key={index}
                         className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
@@ -300,7 +227,7 @@ export default function PekerjaanDetailPage() {
                     <div>
                       <p className="text-sm font-medium text-black mb-3">File Pengumpulan ({currentSubmission.file.length})</p>
                       <div className="space-y-2">
-                        {currentSubmission.file.map((file, index) => (
+                        {currentSubmission.file.map((file: any, index: number) => (
                           <div
                             key={index}
                             className="flex items-center justify-between p-3 border border-gray-200 rounded-lg bg-gray-50"

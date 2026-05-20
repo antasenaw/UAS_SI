@@ -124,7 +124,7 @@ export default function GuruPekerjaanDetailPage() {
               </tr>
             </thead>
             <tbody>
-              {siswaSubmissions.map((siswa) => (
+              {siswaSubmissions.map((siswa: any) => (
                 <tr key={siswa.id} className="border-b border-gray-100 hover:bg-gray-50">
                   <td className="px-6 py-4 font-medium text-black">{siswa.nama}</td>
                   <td className="px-6 py-4">
@@ -144,7 +144,7 @@ export default function GuruPekerjaanDetailPage() {
                     {siswa.status === 'submitted' ? (
                       <div>
                         <p className="text-sm text-gray-600 mb-1">{siswa.submittedAt}</p>
-                        {siswa.file?.map((f, idx) => (
+                        {siswa.file?.map((f: any, idx: number) => (
                           <div
                             key={idx}
                             className="flex items-center gap-2 text-blue-600 text-sm font-medium cursor-pointer hover:underline"

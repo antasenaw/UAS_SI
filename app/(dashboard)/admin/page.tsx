@@ -8,6 +8,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 export default function AdminDashboard() {
   const [dashboardData, setDashboardData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const { searchQuery } = useSearch()
   const normalizedSearch = searchQuery.toLowerCase().trim()
   const searchActive = normalizedSearch.length > 0
@@ -15,13 +16,19 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
+        setError(null)
         const res = await fetch("/api/admin/dashboard")
         const data = await res.json()
-        if (data.success) {
+        if (!res.ok || !data.success) {
+          setError(data.error || 'Gagal memuat statistik dashboard')
+          setDashboardData(null)
+        } else {
           setDashboardData(data)
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error(err)
+        setError(err?.message || 'Terjadi kesalahan saat memuat dashboard')
+        setDashboardData(null)
       } finally {
         setLoading(false)
       }
@@ -55,6 +62,18 @@ export default function AdminDashboard() {
 
   const stats = dashboardData?.stats
 
+  if (!dashboardData && error) {
+    return (
+      <div className="p-8 bg-gray-50 min-h-screen">
+        <div className="max-w-xl mx-auto bg-white rounded-xl shadow-md border border-red-100 p-8">
+          <h1 className="text-2xl font-bold text-red-700 mb-4">Dashboard tidak dapat dimuat</h1>
+          <p className="text-gray-700 mb-4">{error}</p>
+          <p className="text-sm text-gray-500">Periksa koneksi database atau jalankan ulang server.</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
       <div className="mb-8">
@@ -70,7 +89,7 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 text-sm font-medium">Total Siswa</p>
-              <p className="text-2xl font-bold text-black mt-2">{stats?.totalSiswa}</p>
+              <p className="text-2xl font-bold text-black mt-2">{stats?.totalSiswa ?? '-'}</p>
             </div>
             <Users size={32} className="text-blue-100" />
           </div>
@@ -80,7 +99,7 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 text-sm font-medium">Total Guru</p>
-              <p className="text-2xl font-bold text-black mt-2">{stats?.totalGuru}</p>
+              <p className="text-2xl font-bold text-black mt-2">{stats?.totalGuru ?? '-'}</p>
             </div>
             <BookOpen size={32} className="text-green-100" />
           </div>
@@ -90,7 +109,7 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 text-sm font-medium">Total Kelas</p>
-              <p className="text-2xl font-bold text-black mt-2">{stats?.totalKelas}</p>
+              <p className="text-2xl font-bold text-black mt-2">{stats?.totalKelas ?? '-'}</p>
             </div>
             <Layers size={32} className="text-purple-100" />
           </div>
@@ -100,7 +119,7 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 text-sm font-medium">Mata Pelajaran</p>
-              <p className="text-2xl font-bold text-black mt-2">{stats?.totalMapel}</p>
+              <p className="text-2xl font-bold text-black mt-2">{stats?.totalMapel ?? '-'}</p>
             </div>
             <Calendar size={32} className="text-yellow-100" />
           </div>
@@ -110,7 +129,7 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 text-sm font-medium">Rata-rata Nilai</p>
-              <p className="text-2xl font-bold text-blue-600 mt-2">{stats?.rataRataNilai}</p>
+              <p className="text-2xl font-bold text-blue-600 mt-2">{stats?.rataRataNilai ?? '-'}</p>
             </div>
             <TrendingUp size={32} className="text-indigo-100" />
           </div>
@@ -120,7 +139,7 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 text-sm font-medium">Kehadiran</p>
-              <p className="text-2xl font-bold text-green-600 mt-2">{stats?.kehadiran}%</p>
+              <p className="text-2xl font-bold text-green-600 mt-2">{stats?.kehadiran != null ? `${stats.kehadiran}%` : '-'}</p>
             </div>
             <Activity size={32} className="text-red-100" />
           </div>
