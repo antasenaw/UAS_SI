@@ -1,5 +1,6 @@
 import connectDB from '@/lib/mongodb'
 import { NextRequest, NextResponse } from 'next/server'
+import jwt from 'jsonwebtoken'
 import mongoose from 'mongoose'
 import ClassModel from '@/models/Class'
 import Enrollment from '@/models/Enrollment'
@@ -7,6 +8,29 @@ import ClassSubject from '@/models/ClassSubject'
 import Assignment from '@/models/Assignment'
 import Subject from '@/models/Subject'
 import User from '@/models/User'
+import Material from '@/models/Material'
+
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
+
+function getAuthTokenFromRequest(request: NextRequest) {
+  const authHeader = request.headers.get('authorization')
+  if (authHeader?.startsWith('Bearer ')) return authHeader.substring(7)
+  return request.cookies.get('authToken')?.value || null
+}
+
+async function getAuthenticatedGuru(request: NextRequest) {
+  const token = getAuthTokenFromRequest(request)
+  if (!token) return null
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; role: string }
+    if (decoded.role !== 'Guru') return null
+    await connectDB()
+    return await User.findById(decoded.userId)
+  } catch (error) {
+    return null
+  }
+}
 
 function normalizeLegacyClass(doc: any) {
   if (!doc) return doc
@@ -68,6 +92,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Kelas tidak ditemukan' }, { status: 404 })
     }
 
+    const guru = await getAuthenticatedGuru(request)
+    if (!guru) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const teacherId = new mongoose.Types.ObjectId(guru._id)
     const normalizedKelas = normalizeLegacyClass(kelas)
 
     let waliKelas = null
@@ -140,9 +170,13 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    const assignmentsRaw = await Assignment.find({
-      $or: [{ classId: kelas._id }, { Class: kelas._id }],
-    }).lean()
+    const assignmentQuery: any = {
+      $and: [
+        { $or: [{ classId: kelas._id }, { Class: kelas._id }] },
+        { $or: [{ teacherId }, { Teacher: teacherId }] },
+      ],
+    }
+    const assignmentsRaw = await Assignment.find(assignmentQuery).lean()
     const assignments = assignmentsRaw.map(normalizeLegacyAssignment)
     const assignmentSubjectIds = Array.from(new Set(assignments.map((item: any) => item.mataPelajaran?.toString()).filter(Boolean)))
     const assignmentTeacherIds = Array.from(new Set(assignments.map((item: any) => item.teacherId?.toString()).filter(Boolean)))
@@ -181,6 +215,31 @@ export async function GET(request: NextRequest) {
       }
     })
 
+    const teacherMaterials = subjectIds.length > 0
+      ? await Material.find({
+          $and: [
+            { $or: [{ teacherId }, { Teacher: teacherId }] },
+            { mataPelajaran: { $in: subjectIds } },
+          ],
+        }).populate('mataPelajaran', 'namaMataPelajaran').lean()
+      : []
+
+    const materi = teacherMaterials.map((material: any) => ({
+      id: material._id?.toString() ?? '',
+      judul: material.judul || '',
+      deskripsi: material.deskripsi ?? '',
+      file: material.file || '',
+      tanggalUpload: material.tanggalUpload
+        ? new Date(material.tanggalUpload).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+        : '-',
+      mataPelajaran: material.mataPelajaran
+        ? {
+            id: material.mataPelajaran._id?.toString() ?? '',
+            namaMataPelajaran: material.mataPelajaran.namaMataPelajaran,
+          }
+        : null,
+    }))
+
     const responseData = {
       kelas: {
         id: kelas._id.toString(),
@@ -192,6 +251,7 @@ export async function GET(request: NextRequest) {
       siswa,
       jadwal,
       tugas,
+      materi,
     }
 
     return NextResponse.json({ success: true, data: responseData })

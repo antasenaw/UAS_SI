@@ -35,6 +35,22 @@ interface MataPelajaranScore {
   nilai: number
 }
 
+interface StudentRecommendation {
+  studentId: string
+  studentName: string
+  averageGrade: number
+  classification: string
+  color: string
+  recommendations: string[]
+  priority: 'high' | 'medium' | 'low'
+  actions: Array<{
+    id: string
+    title: string
+    description: string
+    type: string
+  }>
+}
+
 import { useState, useEffect } from 'react'
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
@@ -44,11 +60,29 @@ export default function AnalisaPage() {
   const [averageData, setAverageData] = useState<AverageData[]>([])
   const [mataPelajaranScore, setMataPelajaranScore] = useState<MataPelajaranScore[]>([])
   const [loading, setLoading] = useState(true)
+  const [dssData, setDssData] = useState<{
+    personalAnalysis: StudentRecommendation
+    distributionData: Array<{ name: string; value: number; percentage: number; color: string }>
+  } | null>(null)
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const token = localStorage.getItem("authToken")
+        
+        // Fetch DSS data
+        const dssRes = await fetch("/api/siswa/dss", {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        const dssDataResult = await dssRes.json()
+        if (dssDataResult.success) {
+          setDssData({
+            personalAnalysis: dssDataResult.data.personalAnalysis,
+            distributionData: dssDataResult.data.distributionData,
+          })
+        }
+
+        // Fetch original grade data for charts
         const res = await fetch("/api/siswa", {
           headers: { Authorization: `Bearer ${token}` }
         })
@@ -98,6 +132,9 @@ export default function AnalisaPage() {
   const maxScore = scoreData.length > 0 ? Math.max(...scoreData.map((d) => d.score)) : 0
   const minScore = scoreData.length > 0 ? Math.min(...scoreData.map((d) => d.score)) : 0
 
+  const personalAnalysis = dssData?.personalAnalysis
+  const distributionData = dssData?.distributionData || []
+
   return (
     <div className="flex flex-col h-screen">
       
@@ -120,6 +157,67 @@ export default function AnalisaPage() {
 
         {/* Content */}
         <div className="max-w-6xl mx-auto px-4 py-8">
+          {/* DSS Recommendation Card */}
+          {personalAnalysis && (
+            <div
+              className="rounded-lg shadow-lg p-8 mb-8 text-white"
+              style={{ backgroundColor: personalAnalysis.color }}
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <h2 className="text-2xl font-bold mb-2">{personalAnalysis.classification}</h2>
+                  <p className="text-lg opacity-90">
+                    Rata-rata Nilai: <span className="font-bold">{personalAnalysis.averageGrade}</span>
+                  </p>
+                </div>
+                {personalAnalysis.priority === 'high' && (
+                  <span className="inline-block px-4 py-2 bg-red-600 rounded-lg font-bold">
+                    ⚠️ Memerlukan Perhatian Urgent
+                  </span>
+                )}
+                {personalAnalysis.priority === 'medium' && (
+                  <span className="inline-block px-4 py-2 bg-yellow-600 rounded-lg font-bold">
+                    ⚡ Perlu Ditingkatkan
+                  </span>
+                )}
+                {personalAnalysis.priority === 'low' && (
+                  <span className="inline-block px-4 py-2 bg-green-600 rounded-lg font-bold">
+                    ✓ Berkinerja Baik
+                  </span>
+                )}
+              </div>
+
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold mb-3">Rekomendasi untuk Anda:</h3>
+                <ul className="space-y-2">
+                  {personalAnalysis.recommendations.map((rec, idx) => (
+                    <li key={idx} className="flex items-start">
+                      <span className="mr-3 text-xl">•</span>
+                      <span>{rec}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {personalAnalysis.actions.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-3">Tindakan yang Disarankan:</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {personalAnalysis.actions.map((action) => (
+                      <div
+                        key={action.id}
+                        className="bg-white bg-opacity-20 backdrop-blur p-4 rounded-lg"
+                      >
+                        <p className="font-semibold mb-1">{action.title}</p>
+                        <p className="text-sm opacity-90">{action.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Statistics Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             <div className="bg-white rounded-lg shadow p-6">
@@ -199,26 +297,32 @@ export default function AnalisaPage() {
 
             {/* Distribusi Nilai - Pie Chart */}
             <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-lg font-semibold text-black mb-4">Distribusi Nilai per Mata Pelajaran</h3>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={mataPelajaranScore}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ nama, nilai }: any) => `${nama}: ${nilai}`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="nilai"
-                  >
-                    {mataPelajaranScore.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+              <h3 className="text-lg font-semibold text-black mb-4">Distribusi Klasifikasi Nilai</h3>
+              {distributionData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={distributionData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percentage }: any) => `${name}: ${percentage}%`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {distributionData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[300px] flex items-center justify-center text-gray-600">
+                  Tidak ada data distribusi
+                </div>
+              )}
             </div>
           </div>
 
