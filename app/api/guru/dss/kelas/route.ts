@@ -38,23 +38,33 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const classId = searchParams.get('classId')
+    const classIdParam = searchParams.get('classId')
 
-    if (!classId || !mongoose.isValidObjectId(classId)) {
+    // Resolve classId: use param if provided and valid, otherwise try to find the class where the guru is waliKelas
+    let resolvedClassId: string | null = null
+    if (classIdParam && mongoose.isValidObjectId(classIdParam)) {
+      resolvedClassId = classIdParam
+    } else {
+      // try find class where guru is waliKelas
+      const waliClass = await Class.findOne({ waliKelas: guru._id }).lean()
+      if (waliClass) resolvedClassId = waliClass._id.toString()
+    }
+
+    if (!resolvedClassId || !mongoose.isValidObjectId(resolvedClassId)) {
       return NextResponse.json(
-        { success: false, error: 'Class ID tidak valid' },
+        { success: false, error: 'Class ID tidak valid atau tidak ditemukan untuk guru ini' },
         { status: 400 }
       )
     }
 
     // Get class details
-    const classData = await Class.findById(classId).lean()
+    const classData = await Class.findById(resolvedClassId).lean()
     if (!classData) {
       return NextResponse.json({ success: false, error: 'Kelas tidak ditemukan' }, { status: 404 })
     }
 
     // Get enrollments for this class
-    const enrollments = await Enrollment.find({ classId }).lean()
+    const enrollments = await Enrollment.find({ classId: resolvedClassId }).lean()
     const studentIds = enrollments.map((e) => e.studentId)
 
     if (studentIds.length === 0) {
@@ -82,7 +92,7 @@ export async function GET(request: NextRequest) {
 
     // Get all students with their grades
     const students = await User.find({ _id: { $in: studentIds } }).lean()
-    const grades = await Grade.find({ classId, studentId: { $in: studentIds } })
+    const grades = await Grade.find({ classId: resolvedClassId, studentId: { $in: studentIds } })
       .populate('studentId', 'name')
       .lean()
 

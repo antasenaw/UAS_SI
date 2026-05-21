@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Bell, Search, LogOut, User, Settings, ChevronDown } from 'lucide-react'
 import Image from 'next/image'
 import { useSearch } from '@/app/providers'
@@ -74,13 +75,43 @@ export default function Topbar({
 
   const unreadCount = notifications.filter((n) => !n.read).length
 
+  const markAsRead = async (id: string | number) => {
+    try {
+      // Optimistic update
+      setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)))
+
+      const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null
+      await fetch('/api/notifications', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ id }),
+      })
+    } catch (err) {
+      console.error('Failed to mark notification read', err)
+    }
+  }
+
+  const handleNotificationClick = (notif: any) => {
+    if (!notif.read) markAsRead(notif.id)
+    // Optionally navigate or open detail
+  }
+
+  const roleColors: Record<string, string> = {
+    siswa: 'bg-blue-50 text-blue-700',
+    guru: 'bg-green-50 text-green-700',
+    admin: 'bg-indigo-50 text-indigo-700',
+  }
+
   return (
     <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-40">
       <div className="px-8 py-4 flex items-center justify-between gap-6">
         {/* Search Bar */}
         <div className="flex-1 max-w-xl">
           <div className="flex items-center gap-2 px-4 py-3 rounded-full border border-gray-300 bg-gray-50 hover:bg-white transition-colors">
-            <Search size={18} className="text-gray-400" />
+            <Search size={24} className="text-gray-400" />
             <input
               type="text"
               placeholder="Cari materi, tugas, nilai..."
@@ -114,32 +145,39 @@ export default function Topbar({
                   <h3 className="font-bold text-black text-sm">Notifikasi</h3>
                 </div>
                 <div className="max-h-96 overflow-y-auto">
-                  {notifications.map((notif) => (
-                    <div
-                      key={notif.id}
-                      className={`px-4 py-3 border-b border-gray-100 last:border-0 hover:bg-gray-50 cursor-pointer transition-colors ${
-                        !notif.read ? 'bg-blue-50' : ''
-                      }`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="flex-1 min-w-0">
-                          <p className={`text-sm font-semibold ${!notif.read ? 'text-blue-600' : 'text-black'}`}>
-                            {notif.title}
-                          </p>
-                          <p className="text-xs text-gray-600 mt-1 line-clamp-2">{notif.message}</p>
-                          <p className="text-xs text-gray-500 mt-2">{notif.time}</p>
+                  {loadingNotifications ? (
+                    <div className="p-4 text-center text-gray-600">Memuat notifikasi...</div>
+                  ) : notifications.length === 0 ? (
+                    <div className="p-4 text-center text-gray-600">Saya tidak ada notifikasi</div>
+                  ) : (
+                    notifications.map((notif) => (
+                      <div
+                        key={notif.id}
+                        onClick={() => handleNotificationClick(notif)}
+                        className={`px-4 py-3 border-b border-gray-100 last:border-0 hover:bg-gray-50 cursor-pointer transition-colors ${
+                          !notif.read ? 'bg-blue-50' : ''
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-sm font-semibold ${!notif.read ? 'text-blue-600' : 'text-black'}`}>
+                              {notif.title}
+                            </p>
+                            <p className="text-xs text-gray-600 mt-1 line-clamp-2">{notif.message}</p>
+                            <p className="text-xs text-gray-500 mt-2">{notif.time}</p>
+                          </div>
+                          {!notif.read && (
+                            <div className="w-2 h-2 bg-blue-600 rounded-full mt-1 flex-shrink-0"></div>
+                          )}
                         </div>
-                        {!notif.read && (
-                          <div className="w-2 h-2 bg-blue-600 rounded-full mt-1 flex-shrink-0"></div>
-                        )}
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
                 <div className="px-4 py-2 border-t border-gray-200 text-center">
-                  <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                  <Link href="/notifications" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
                     Lihat Semua
-                  </button>
+                  </Link>
                 </div>
               </div>
             )}

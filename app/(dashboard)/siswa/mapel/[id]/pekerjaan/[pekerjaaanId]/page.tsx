@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { useState, useRef, useEffect } from 'react'
-import Topbar from '@/components/topbar'
+import { useAuth } from '@/lib/auth/context'
 import { ArrowLeft, FileText, Download, Upload, X, CheckCircle, Clock, AlertCircle } from 'lucide-react'
 
 interface SubmissionFile {
@@ -21,6 +21,7 @@ interface Submission {
 }
 
 export default function PekerjaanDetailPage() {
+  const { user } = useAuth()
   const params = useParams()
   const mapelId = params.id as string
   const pekerjaaanId = params.pekerjaaanId as string
@@ -32,18 +33,39 @@ export default function PekerjaanDetailPage() {
   const [pekerjaan, setPekerjaan] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
+  const authHeaders = () => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null
+    const headers: Record<string, string> = {}
+    if (token) {
+      headers.Authorization = 'Bearer ' + token
+    }
+    return headers
+  }
+
   useEffect(() => {
-    const fetchAssignment = async () => {
+    const fetchAssignmentAndSubmission = async () => {
       try {
-        const token = localStorage.getItem("authToken")
-        const res = await fetch(`/api/assignment?id=${pekerjaaanId}`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        })
-        const data = await res.json()
-        if (data.success && data.data && data.data.length > 0) {
-          setPekerjaan(data.data[0])
+        const [assignmentRes, submissionRes] = await Promise.all([
+          fetch(`/api/assignment?id=${pekerjaaanId}`, { headers: authHeaders() }),
+          fetch(`/api/submission?assignmentId=${pekerjaaanId}&studentId=${user?._id || ''}`, { headers: authHeaders() })
+        ])
+
+        const assignmentJson = await assignmentRes.json()
+        if (assignmentJson.success && assignmentJson.data && assignmentJson.data.length > 0) {
+          setPekerjaan(assignmentJson.data[0])
+        }
+
+        const submissionJson = await submissionRes.json()
+        if (submissionJson.success && submissionJson.data && submissionJson.data.length > 0) {
+          const existing = submissionJson.data[0]
+          const fileNames = String(existing.file || '').split(';').filter(Boolean)
+          const deadline = assignmentJson.data?.[0]?.deadline ? new Date(assignmentJson.data[0].deadline) : new Date()
+          setSubmission({
+            id: existing._id,
+            file: fileNames.map((name: string) => ({ nama: name, ukuran: '-', tipe: 'FILE', url: '#' })),
+            submittedAt: existing.tanggalSubmit,
+            status: new Date(existing.tanggalSubmit) <= deadline ? 'tepat_waktu' : 'terlambat'
+          })
         }
       } catch (err) {
         console.error(err)
@@ -51,10 +73,11 @@ export default function PekerjaanDetailPage() {
         setLoading(false)
       }
     }
-    if (pekerjaaanId) {
-      fetchAssignment()
+
+    if (pekerjaaanId && user?._id) {
+      fetchAssignmentAndSubmission()
     }
-  }, [pekerjaaanId])
+  }, [pekerjaaanId, user?._id])
 
   if (loading) {
     return (
@@ -86,28 +109,50 @@ export default function PekerjaanDetailPage() {
   }
 
   const handleUpload = async () => {
-    if (uploadedFiles.length === 0 || isOverdue) return
-    
+    if (uploadedFiles.length === 0 || isOverdue || !user?._id) return
+
     setIsUploading(true)
-    setTimeout(() => {
-      const newSubmission: Submission = {
-        id: '1',
-        file: uploadedFiles.map(file => ({
-          nama: file.name,
-          ukuran: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
-          tipe: file.type.split('/')[1].toUpperCase() || 'FILE',
-          url: '#'
-        })),
-        submittedAt: currentDate.toISOString(),
-        status: isOverdue ? 'terlambat' : 'tepat_waktu'
+    try {
+      const formData = new FormData()
+      formData.append('assignmentId', pekerjaaanId)
+      formData.append('studentId', user._id)
+      formData.append('tanggalSubmit', new Date().toISOString())
+      formData.append('status', 'Submitted')
+      uploadedFiles.forEach((file) => {
+        formData.append('file', file)
+      })
+
+      const res = await fetch('/api/submission', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: formData,
+      })
+
+      const data = await res.json()
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Gagal mengirimkan tugas')
       }
-      setSubmission(newSubmission)
+
+      setSubmission({
+        id: data.data._id,
+        file: data.data.files || uploadedFiles.map((file) => ({
+          nama: file.name,
+          ukuran: (file.size / 1024 / 1024).toFixed(2) + ' MB',
+          tipe: file.type.split('/')[1].toUpperCase() || 'FILE',
+          url: '#',
+        })),
+        submittedAt: new Date().toISOString(),
+        status: isOverdue ? 'terlambat' : 'tepat_waktu',
+      })
       setUploadedFiles([])
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
       }
+    } catch (error) {
+      console.error('Upload gagal:', error)
+    } finally {
       setIsUploading(false)
-    }, 1000)
+    }
   }
 
   const handleUndoSubmission = () => {

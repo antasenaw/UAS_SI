@@ -208,8 +208,8 @@ export default function AnalisaPage() {
                         key={action.id}
                         className="bg-white bg-opacity-20 backdrop-blur p-4 rounded-lg"
                       >
-                        <p className="font-semibold mb-1">{action.title}</p>
-                        <p className="text-sm opacity-90">{action.description}</p>
+                        <p className="font-semibold text-black mb-1">{action.title}</p>
+                        <p className="text-sm text-black opacity-90">{action.description}</p>
                       </div>
                     ))}
                   </div>
