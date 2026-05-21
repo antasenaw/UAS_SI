@@ -3,7 +3,9 @@
 import GuruProfileCard from '@/components/guruProfileCard'
 import { useMemo, useState, useEffect } from 'react'
 import { useSearch } from '@/app/providers'
-import { BookOpen, Users, TrendingUp, AlertCircle } from 'lucide-react'
+import { BookOpen, Users, TrendingUp, AlertCircle, ArrowRight } from 'lucide-react'
+import Link from 'next/link'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
 interface KelasSummary {
   id: string
@@ -61,21 +63,25 @@ export default function GuruBeranda() {
   }, [])
 
   const kelasToShow = useMemo(
-    () =>
-      (dashboardData?.classes || []).filter((kelas: any) =>
+    () => {
+      const filtered = (dashboardData?.classes || []).filter((kelas: any) =>
         [kelas.nama, kelas.topikTerbaru]
           .some((value) => value.toLowerCase().includes(normalizedSearch))
-      ),
-    [normalizedSearch, dashboardData]
+      )
+      return searchActive ? filtered : filtered.slice(0, 3)
+    },
+    [normalizedSearch, dashboardData, searchActive]
   )
 
   const siswaToShow = useMemo(
-    () =>
-      (dashboardData?.siswaAnalisa || []).filter((siswa: any) =>
+    () => {
+      const filtered = (dashboardData?.siswaAnalisa || []).filter((siswa: any) =>
         [siswa.nama, siswa.kelas, siswa.status]
           .some((value) => value.toString().toLowerCase().includes(normalizedSearch))
-      ),
-    [normalizedSearch, dashboardData]
+      )
+      return searchActive ? filtered : filtered.slice(0, 3)
+    },
+    [normalizedSearch, dashboardData, searchActive]
   )
 
   const getStatusColor = (status: string) => {
@@ -168,7 +174,14 @@ export default function GuruBeranda() {
 
           {/* Kelas Section */}
           <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold text-black mb-4">Kelas yang Anda Ajar</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-black">Kelas yang Anda Ajar</h2>
+              {!searchActive && (
+                <Link href="/guru/kelas" className="flex items-center gap-1 text-blue-600 hover:text-blue-800 transition-colors text-sm font-medium">
+                  Lihat Semua <ArrowRight size={16} />
+                </Link>
+              )}
+            </div>
             <div className="grid grid-cols-2 gap-4">
               {kelasToShow.length > 0 ? (
                 kelasToShow.map((kelas: any) => (
@@ -198,9 +211,16 @@ export default function GuruBeranda() {
 
           {/* Analisa Siswa Wali Kelas */}
           <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold text-black mb-4">
-              Analisa Siswa Kelas Wali ({dashboardData?.waliKelasClassName || "Bukan Wali Kelas"})
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-black">
+                Analisa Siswa Kelas Wali ({dashboardData?.waliKelasClassName || "Bukan Wali Kelas"})
+              </h2>
+              {!searchActive && (
+                <Link href="/guru/wali-kelas" className="flex items-center gap-1 text-blue-600 hover:text-blue-800 transition-colors text-sm font-medium">
+                  Lihat Semua <ArrowRight size={16} />
+                </Link>
+              )}
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>

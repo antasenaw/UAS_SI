@@ -117,8 +117,8 @@ export default function SiswaDashboard() {
     )
   }
 
-  const randomMataPelajaran = dashboardData?.subjects || []
-  const upcomingTugas = dashboardData?.assignments || []
+  const randomMataPelajaran = getRandomItems(dashboardData?.subjects || [], 3)
+  const upcomingTugas = getUpcomingTugas(dashboardData?.assignments || [])
   const scoreData = dashboardData?.chartData?.scoreData || []
   const averageData = dashboardData?.chartData?.averageData || []
 

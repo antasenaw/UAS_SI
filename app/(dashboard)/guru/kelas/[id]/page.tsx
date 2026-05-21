@@ -274,40 +274,8 @@ export default function GuruKelasDetailPage() {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-1">
-          <h2 className="text-xl font-semibold text-black mb-4">Jadwal Pelajaran</h2>
-          <div className="space-y-3">
-            {data?.jadwal.length ? (
-              data.jadwal.map((item) => (
-                <div
-                  key={item.id}
-                  className="p-4 bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow"
-                >
-                  <div className="flex items-start gap-3 mb-2">
-                    <BookOpen size={20} className="text-green-500 shrink-0" />
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-black text-sm">
-                        {item.subject?.namaMataPelajaran ?? 'Mata pelajaran tidak tersedia'}
-                      </h3>
-                      <p className="text-xs text-gray-500 mt-1">{item.hari} • {item.jamMulai} - {item.jamSelesai}</p>
-                    </div>
-                  </div>
-                  <p className="text-xs text-gray-600 mb-2">Ruang: {item.ruangKelas || '-'}</p>
-                  <p className="text-xs font-medium text-gray-700">
-                    Guru: {item.guruPengajar?.name ?? '-'}
-                  </p>
-                </div>
-              ))
-            ) : (
-              <div className="p-6 bg-white rounded-lg border border-gray-200 text-center text-gray-600">
-                Jadwal pelajaran belum tersedia untuk kelas ini.
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="lg:col-span-1">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div>
           <h2 className="text-xl font-semibold text-black mb-4">Pekerjaan / Tugas</h2>
           <div className="space-y-3">
             {data?.tugas.length ? (
@@ -337,7 +305,7 @@ export default function GuruKelasDetailPage() {
           </div>
         </div>
 
-        <div className="lg:col-span-1">
+        <div>
           <h2 className="text-xl font-semibold text-black mb-4">Info Kelas</h2>
           <div className="space-y-4">
             <div className="p-6 bg-white rounded-lg border border-gray-200">

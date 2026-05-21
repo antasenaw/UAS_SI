@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Bell, Search, LogOut, User, Settings, ChevronDown } from 'lucide-react'
 import Image from 'next/image'
 import { useSearch } from '@/app/providers'
+import { useAuth } from '@/lib/auth/context'
 
 interface TopbarProps {
   userName?: string
@@ -20,39 +21,56 @@ export default function Topbar({
   onLogout,
 }: TopbarProps) {
   const router = useRouter()
+  const { user } = useAuth()
   const { searchQuery, setSearchQuery } = useSearch()
   const [notificationOpen, setNotificationOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const [notifications, setNotifications] = useState<any[]>([])
+  const [loadingNotifications, setLoadingNotifications] = useState(false)
 
-  const roleColors: Record<string, string> = {
-    siswa: 'bg-blue-50 text-blue-700',
-    guru: 'bg-green-50 text-green-700',
-    admin: 'bg-indigo-50 text-indigo-700',
-  }
+  // Fetch notifications on component mount and periodically
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        setLoadingNotifications(true)
+        const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null
+        
+        if (!token) {
+          // Fallback to empty notifications if not authenticated
+          setNotifications([])
+          return
+        }
 
-  const notifications = [
-    {
-      id: 1,
-      title: 'Nilai Baru',
-      message: 'Nilai Matematika telah diupdate',
-      time: '10 menit lalu',
-      read: false,
-    },
-    {
-      id: 2,
-      title: 'Tugas Baru',
-      message: 'Tugas Bahasa Indonesia deadline besok',
-      time: '1 jam lalu',
-      read: false,
-    },
-    {
-      id: 3,
-      title: 'Pengumuman',
-      message: 'Pengumuman penting dari kepala sekolah',
-      time: '3 jam lalu',
-      read: true,
-    },
-  ]
+        const response = await fetch('/api/notifications', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+
+        if (response.ok) {
+          const result = await response.json()
+          setNotifications(result.data || [])
+        } else {
+          // Fallback to empty if API fails
+          setNotifications([])
+        }
+      } catch (error) {
+        console.error('Error fetching notifications:', error)
+        // Fallback to empty on error
+        setNotifications([])
+      } finally {
+        setLoadingNotifications(false)
+      }
+    }
+
+    // Fetch notifications immediately
+    fetchNotifications()
+
+    // Set up polling for real-time updates (every 30 seconds)
+    const interval = setInterval(fetchNotifications, 30000)
+
+    return () => clearInterval(interval)
+  }, [user])
 
   const unreadCount = notifications.filter((n) => !n.read).length
 

@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { useSearch } from '@/app/providers'
 import { useAuth } from '@/lib/auth/context'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
-import { useParams } from 'next/navigation'
 import Link from 'next/link'
 
 interface ClassAnalysisData {
@@ -60,22 +59,21 @@ interface DistribusiNilai {
 export default function GuruAnalisaPage() {
   const { user } = useAuth()
   const { searchQuery } = useSearch()
-  const params = useParams()
-  const classId = params?.id as string
   
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [analysisData, setAnalysisData] = useState<ClassAnalysisData | null>(null)
 
   useEffect(() => {
-    if (!user || !classId) return
+    if (!user) return
 
     const fetchAnalysis = async () => {
       try {
         setLoading(true)
         const token = localStorage.getItem('authToken')
         
-        const response = await fetch(`/api/guru/dss/kelas?classId=${classId}`, {
+        // Fetch analysis for the guru's wali kelas (first/primary class)
+        const response = await fetch(`/api/guru/dss/kelas`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -96,7 +94,7 @@ export default function GuruAnalisaPage() {
     }
 
     fetchAnalysis()
-  }, [user, classId])
+  }, [user])
 
   const normalizedSearch = searchQuery.toLowerCase().trim()
   const searchActive = normalizedSearch.length > 0
@@ -331,10 +329,10 @@ export default function GuruAnalisaPage() {
 
                 <div className="flex gap-2 pt-4 border-t border-gray-200">
                   <Link
-                    href={`/dashboard/guru/kelas/${classId}`}
+                    href={`/guru/wali-kelas`}
                     className="flex-1 bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-blue-700 text-center transition"
                   >
-                    Lihat Detail
+                    Lihat Detail Siswa
                   </Link>
                 </div>
               </div>
