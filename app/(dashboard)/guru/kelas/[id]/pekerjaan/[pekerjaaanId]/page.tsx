@@ -9,6 +9,8 @@ import { useAuth } from '@/lib/auth/context'
 interface SubmissionFile {
   nama: string
   ukuran?: string
+  tipe?: string
+  url?: string
 }
 
 interface SubmissionDetail {
@@ -17,7 +19,7 @@ interface SubmissionDetail {
   studentName: string
   studentNoInduk?: string
   status: 'Draft' | 'Submitted' | 'Graded'
-  file: string
+  files: SubmissionFile[]
   tanggalSubmit: string
   nilai?: number
   gradeId?: string
@@ -103,20 +105,41 @@ export default function GuruPekerjaanDetailPage() {
       }
 
       const submissionsData = submissionsJson.data || []
-      const parsedSubmissions = submissionsData.map((item: any) => ({
-        id: item._id,
-        studentId: item.studentId?._id || item.studentId,
-        studentName: item.studentId?.name || 'Tanpa Nama',
-        studentNoInduk: item.studentId?.noInduk,
-        status: item.status,
-        file: item.file,
-        tanggalSubmit: item.tanggalSubmit ? new Date(item.tanggalSubmit).toLocaleDateString('id-ID', {
-          day: '2-digit',
-          month: 'long',
-          year: 'numeric',
-        }) : '-',
-        nilai: undefined,
-      }))
+      const parsedSubmissions = submissionsData.map((item: any) => {
+        // support both legacy `file` string and new `files` array
+        let files: SubmissionFile[] = []
+        if (Array.isArray(item.files) && item.files.length > 0) {
+          files = item.files.map((f: any) => {
+            const fileName = f.nama || 'file'
+            // Extract just the safe filename from full path if needed
+            const urlFileName = f.url ? f.url.split('/').pop() : fileName
+            return {
+              nama: fileName,
+              ukuran: f.ukuran ? `${(parseInt(f.ukuran) / 1024).toFixed(2)} KB` : '-',
+              tipe: f.tipe || '',
+              url: `/api/submission/download?file=${encodeURIComponent(urlFileName)}`
+            }
+          })
+        } else if (typeof item.file === 'string' && item.file.trim()) {
+          const names = String(item.file).split(';').filter(Boolean)
+          files = names.map((n: string) => ({ nama: n, ukuran: '-', tipe: 'FILE', url: '#' }))
+        }
+
+        return {
+          id: item._id,
+          studentId: item.studentId?._id || item.studentId,
+          studentName: item.studentId?.name || 'Tanpa Nama',
+          studentNoInduk: item.studentId?.noInduk,
+          status: item.status,
+          files,
+          tanggalSubmit: item.tanggalSubmit ? new Date(item.tanggalSubmit).toLocaleDateString('id-ID', {
+            day: '2-digit',
+            month: 'long',
+            year: 'numeric',
+          }) : '-',
+          nilai: undefined,
+        }
+      })
 
       setAssignment(assignmentDetail)
       setSubmissions(parsedSubmissions)
@@ -332,10 +355,25 @@ export default function GuruPekerjaanDetailPage() {
                         {isSubmitted ? (
                           <div className="space-y-1">
                             <p className="text-sm text-gray-600">{submission.tanggalSubmit}</p>
-                            <div className="text-sm text-blue-600 hover:underline">
-                              <FileText size={14} className="inline-block mr-2" />
-                              {submission.file || 'Tidak ada file terlampir'}
-                            </div>
+                            {submission.files && submission.files.length > 0 ? (
+                              <div className="space-y-2">
+                                {submission.files.map((f) => (
+                                  <a
+                                    key={f.nama + f.url}
+                                    href={f.url || '#'}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-sm text-blue-600 hover:underline flex items-center gap-2"
+                                  >
+                                    <FileText size={14} />
+                                    <span>{f.nama}</span>
+                                    {f.ukuran && <span className="text-xs text-gray-500">({f.ukuran})</span>}
+                                  </a>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-sm text-gray-500">Tidak ada file terlampir</p>
+                            )}
                           </div>
                         ) : (
                           <p className="text-sm text-gray-500">-</p>
