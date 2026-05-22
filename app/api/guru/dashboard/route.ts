@@ -121,8 +121,10 @@ export async function GET(request: NextRequest) {
           : 0;
 
         return {
-          id: s._id,
+          id: s._id.toString(),
           nama: s.name,
+          nis: s.noInduk || s.nis || '',
+          noUrut: s.noUrut || '',
           kelas: `${waliClass.angkatan} ${waliClass.jurusan} ${waliClass.namaKelas}`,
           rataRataNilai: Math.round(avg),
           status: avg >= 80 ? 'baik' : avg >= 60 ? 'cukup' : 'kurang'

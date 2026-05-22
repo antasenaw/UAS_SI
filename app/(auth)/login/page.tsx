@@ -1,8 +1,8 @@
 "use client"
 
 import Image from "next/image"
+import Link from "next/link"
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth/context"
 
 export default function LoginPage() {
@@ -10,7 +10,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
   const { login } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -50,7 +49,7 @@ export default function LoginPage() {
     <div className="min-h-screen relative overflow-hidden">
       
       {/* LEFT BACKGROUND */}
-      <div className="absolute inset-0 bg-teal-800 flex items-center justify-start pl-32">
+      <div className="absolute inset-0 bg-blue-800 flex items-center justify-start pl-32">
         <Image
           src="/src/logo.png"
           alt="Logo"
@@ -62,8 +61,8 @@ export default function LoginPage() {
 
       {/* RIGHT WHITE CURVE */}
       <div className="absolute right-0 top-0 h-full w-[70%] bg-gray-100 rounded-l-[350px] flex items-center justify-center">
-        <div className="w-95 p-20 rounded-4xl shadow-lg border-2 border-teal-800">
-          <h2 className="text-2xl font-semibold mb-10 text-center text-teal-800">
+        <div className="w-95 p-20 rounded-4xl shadow-lg border-2 border-blue-800">
+          <h2 className="text-2xl font-semibold mb-10 text-center text-blue-800">
             Masuk
           </h2>
 
@@ -79,7 +78,7 @@ export default function LoginPage() {
               placeholder="NISN"
               value={noInduk}
               onChange={(e) => setNoInduk(e.target.value)}
-              className="w-full mb-4 px-8 py-3 text-black rounded-full bg-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-800"
+              className="w-full mb-4 px-8 py-3 text-black rounded-full bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
               disabled={isLoading}
             />
@@ -89,19 +88,21 @@ export default function LoginPage() {
               placeholder="Kata Sandi"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full mb-2 px-5 py-3 rounded-full text-black bg-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-800"
+              className="w-full mb-2 px-5 py-3 rounded-full text-black bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
               disabled={isLoading}
             />
 
-            <div className="text-right text-sm text-gray-500 mb-4 cursor-pointer hover:text-teal-800">
-              Lupa password?
+            <div className="text-right text-sm text-gray-500 mb-4 hover:text-blue-800">
+              <Link href="/reset" className="font-medium text-blue-600 hover:text-blue-800">
+                Lupa password?
+              </Link>
             </div>
 
             <button 
               type="submit"
               disabled={isLoading}
-              className="w-full bg-teal-700 text-white py-3 rounded-full hover:bg-teal-800 transition disabled:bg-teal-500 disabled:cursor-not-allowed"
+              className="w-full bg-blue-600 text-white py-3 rounded-full hover:bg-blue-700 transition disabled:bg-blue-400 disabled:cursor-not-allowed"
             >
               {isLoading ? "Sedang login..." : "Login"}
             </button>
